@@ -1,0 +1,4 @@
+client.base.url = https://api.sandbox.yolt.io
+redirect.url.id = [YOUR_REDIRECT_URL_ID_UUID]
+
+server.port=8080

@@ -1,0 +1,18 @@
+@startuml
+entity User {
+  * id
+  --
+  * client_user_id
+  * created_at
+  name
+}
+
+entity User_Site {
+   * user_site_id
+   --
+   * client_user_id <<FK>>
+   * site_id
+}
+
+User ||--o{ User_Site
+@enduml
