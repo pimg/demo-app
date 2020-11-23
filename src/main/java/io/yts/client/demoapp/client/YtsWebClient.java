@@ -24,11 +24,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.spec.InvalidKeySpecException;
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -39,13 +34,18 @@ public class YtsWebClient {
 	private final ClientHttpConnector connector;
 	private final Cache<String, String> cache;
 	private final String baseUrl;
+	private final String keystorePassword;
+	private final String alias;
+	private final TokenUtil tokenUtil;
 	private static final Logger logger = LoggerFactory.getLogger(YtsWebClient.class);
 
 
 	@Autowired
-	public YtsWebClient(SslContext sslContext, @Value("${client.base.url}") String baseUrl) {
-
+	public YtsWebClient(TokenUtil tokenUtil, SslContext sslContext, @Value("${client.base.url}") String baseUrl, @Value("${client.signing.keystore.password}") String keystorePassword, @Value("${client.signing.keystore.alias}") String alias) {
+		this.tokenUtil = tokenUtil;
 		this.baseUrl = baseUrl;
+		this.keystorePassword = keystorePassword;
+		this.alias = alias;
 
 		HttpClient httpClient = HttpClient.create()
 				.secure(sslContextSpec -> sslContextSpec.sslContext(sslContext));
@@ -90,7 +90,7 @@ public class YtsWebClient {
 			return Mono.just(cachedToken);
 		} else {
 			try {
-				return getAccessTokenFromServer(TokenUtil.createToken());
+				return getAccessTokenFromServer(tokenUtil.createToken(keystorePassword, alias));
 			} catch (Exception e) {
 				e.printStackTrace();
 				return Mono.empty();
@@ -98,7 +98,7 @@ public class YtsWebClient {
 		}
 	}
 
-	private Mono<String> getAccessTokenFromServer(String requestToken) throws IOException, InvalidKeySpecException, NoSuchAlgorithmException, URISyntaxException, CertificateException {
+	private Mono<String> getAccessTokenFromServer(String requestToken) {
 
 		logger.info("Requesting Access token");
 		WebClient anonymousWebClient = WebClient.builder()

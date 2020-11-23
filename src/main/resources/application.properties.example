@@ -1,4 +1,8 @@
 client.base.url = https://api.sandbox.yolt.io
 redirect.url.id = [YOUR_REDIRECT_URL_ID_UUID]
+client.tls.keystore.password=[YOUR_TLS_KEYSTORE_PASSWORD]
+client.tls.keystore.alias=[YOUR_TLS_KEYSTORE_KEY_ALIAS]
+client.signing.keystore.password=[YOUR_SIGNING_KEY_KEYSTORE_PASSWORD]
+client.signing.keystore.alias=[YOUR_SIGNING_KEYSTORE_KEY_ALIAS]
 
 server.port=8080

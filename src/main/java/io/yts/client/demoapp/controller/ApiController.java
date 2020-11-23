@@ -2,20 +2,16 @@ package io.yts.client.demoapp.controller;
 
 import io.yts.client.demoapp.model.User;
 import io.yts.client.demoapp.model.UserSite;
+import io.yts.client.demoapp.service.AccountService;
 import io.yts.client.demoapp.service.SiteService;
 import io.yts.client.demoapp.service.UserService;
-import io.yts.client.messages.ClientSiteEntity;
-import io.yts.client.messages.LoginStep;
+import io.yts.client.messages.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.server.HttpServerResponse;
 
-import java.net.URI;
 import java.util.UUID;
 
 @RestController
@@ -30,6 +26,9 @@ public class ApiController {
 
 	@Autowired
 	private SiteService siteService;
+
+	@Autowired
+	private AccountService accountService;
 
 	@GetMapping("/health")
 	public Mono<String> getHealth() {
@@ -59,5 +58,15 @@ public class ApiController {
 	@GetMapping("/sites/connections")
 	public Flux<UserSite> getBankConnection() {
 		return siteService.getConnections();
+	}
+
+	@GetMapping("/accounts/{userId}")
+	public Flux<AccountDTO> getAccounts(@PathVariable("userId") UUID userId) {
+		return accountService.getAccounts(userId);
+	}
+
+	@GetMapping("/transactions/{userId}/{accountId}")
+	public Flux<TransactionsPageDTO> getTransactions(@PathVariable("userId") UUID userId, @PathVariable("accountId") UUID accountId) {
+		return accountService.getTransactions(userId, accountId);
 	}
 }

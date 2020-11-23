@@ -4,33 +4,22 @@ import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.Base64;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.Date;
 import java.util.UUID;
 
+@Component
 public class TokenUtil {
 
-	public static String createToken() throws NoSuchAlgorithmException, URISyntaxException, IOException, InvalidKeySpecException, JOSEException, NoSuchProviderException {
-		String privateKeyContent = new String(Files.readAllBytes(Paths.get(TokenUtil.class.getResource("/tls/private-key.pem").toURI())));
-		privateKeyContent = privateKeyContent.replaceAll("\\n", "").replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "");
+	public String createToken(String keystorePassword, String alias) throws NoSuchAlgorithmException, IOException, JOSEException, KeyStoreException, CertificateException, UnrecoverableKeyException {
 
-		KeyFactory kf = KeyFactory.getInstance("RSA");
+		PrivateKey key = CertificateManager.getPrivateKey("tls/signing-keystore.p12", keystorePassword, alias);
 
-		PKCS8EncodedKeySpec keySpecPKCS8 = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKeyContent));
-		PrivateKey privKey = kf.generatePrivate(keySpecPKCS8);
-
-		JWSSigner signer = new RSASSASigner(privKey);
+		JWSSigner signer = new RSASSASigner(key);
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.issuer("30f57515-1045-45a8-8efd-54f32a46153a")
 				.jwtID(UUID.randomUUID().toString())
@@ -41,4 +30,5 @@ public class TokenUtil {
 		signedJWT.sign(signer);
 		return signedJWT.serialize();
 	}
+
 }
