@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "version": "2020-07-20",
+    "version": "2020-12-03",
     "title": "Yolt Technology Services API reference",
     "description": "# Authentication\n\n<!-- ReDoc-Inject: <security-definitions> -->"
   },
@@ -39,25 +39,29 @@
         ],
         "summary": "Request an access token",
         "operationId": "getAccessTokenUsingPOST",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "grant_type": {
-                    "description": "Grant type. Right now we only support 'client_credentials' value.",
-                    "type": "string"
-                  },
-                  "request_token": {
-                    "description": "Your JWT Request Token. Check docs to see how to generate it.",
-                    "type": "string"
-                  }
-                }
-              }
+        "parameters": [
+          {
+            "name": "grant_type",
+            "in": "query",
+            "description": "Grant type. Right now we only support 'client_credentials' value.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "request_token",
+            "in": "query",
+            "description": "Your JWT Request Token. Check docs to see how to generate it.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 1500,
+              "pattern": "^[a-zA-Z0-9\\-_]*\\.[a-zA-Z0-9\\-_]*\\.[a-zA-Z0-9\\-_]*$"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -69,11 +73,97 @@
               }
             }
           }
-        },
-        "deprecated": false
+        }
       }
     },
-    "/v1/users/{userId}": {
+    "/v1/users/{userId}/kyc/status": {
+      "get": {
+        "tags": [
+          "kyc"
+        ],
+        "summary": "Retrieves the KYC status for a user",
+        "operationId": "getKYCStatusUsingGET",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "userId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The KYC status for the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KYCStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Either there is no user found for this id or there is no KYC status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/entity-user": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Create a client user for an entity",
+        "operationId": "createEntityClientUserUsingPOST",
+        "parameters": [
+          {
+            "name": "client-user-id",
+            "description": "the unique identifier of your user",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddClientUserEntity"
+              }
+            }
+          },
+          "description": "The client user to be added.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successfully created the client user",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientUser"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/users/{userId}": {
       "put": {
         "tags": [
           "users"
@@ -135,15 +225,14 @@
               }
             }
           }
-        },
-        "deprecated": false
+        }
       },
       "delete": {
         "tags": [
           "users"
         ],
         "summary": "Delete a user",
-        "operationId": "deleteUsingDELETE",
+        "operationId": "deleteUsingDELETE_1",
         "parameters": [
           {
             "name": "userId",
@@ -159,155 +248,22 @@
         "responses": {
           "204": {
             "description": "Successfully deleted the user"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
           }
-        },
-        "deprecated": false
+        }
       }
     },
-    "/v1/entity-user": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Create a client user for an entity",
-        "operationId": "createEntityClientUserUsingPOST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddClientUserEntity"
-              }
-            }
-          },
-          "description": "The client user to be added."
-        },
-        "responses": {
-          "201": {
-            "description": "Successfully created the client user",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClientUser"
-                }
-              }
-            }
-          }
-        },
-        "deprecated": false
-      }
-    },
-    "/v1/users/{userId}/accounts": {
+    "/v1/users/{userId}/kyc/file/report": {
       "get": {
         "tags": [
-          "accounts"
+          "kyc"
         ],
-        "summary": "Retrieve a list of accounts that belong to a specific User.",
-        "description": "Retrieve a list of accounts for the user identified by the path parameter userId. The query parameter userSiteId can be used to narrow the results down to a specific UserSite.",
-        "operationId": "getAccountsUsingGET",
+        "summary": "Retrieves the KYC report for a user",
+        "operationId": "getKYCReportUsingGET",
         "parameters": [
           {
             "name": "userId",
             "in": "path",
-            "description": "Unique identifier of the User for which to list accounts.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "userSiteId",
-            "in": "query",
-            "description": "Optional identifier of the UserSite, if present only accounts linked to the UserSite will be returned.",
-            "required": false,
-            "allowEmptyValue": false,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AccountDTO"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Not Found"
-          }
-        },
-        "deprecated": false
-      }
-    },
-    "/v1/users/{userId}/transactions": {
-      "get": {
-        "tags": [
-          "transactions"
-        ],
-        "summary": "Retrieve a list of transactions that belong to a specific User.",
-        "operationId": "getTransactionsUsingGET",
-        "parameters": [
-          {
-            "name": "accountIds",
-            "in": "query",
-            "description": "Optional list of accountIds to be used as filter. It can be provided as a comma-separated list.",
-            "required": false,
-            "allowEmptyValue": false,
-            "explode": true,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              }
-            }
-          },
-          {
-            "name": "dateInterval",
-            "in": "query",
-            "description": "Date interval with end-date included for which the transactions should be retrieved. Current month if this parameter is not specified. (example: 2016-07-01/2016-07-31) Supported format: \n\r'start-date'/'end-date'\n\r'start-date'/'duration'\n\r'duration'/'end-date'.\n\rThe duration is in Period format: ISO-8601. The date format is also according to ISO-8601, i.e. the default Local Date (Time) Formatter",
-            "required": false,
-            "allowEmptyValue": false,
-            "example": "2016-07-01/2016-07-31",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "next",
-            "in": "query",
-            "description": "Used for pagination. If an initial call to this endpoint returns an object where the field 'next' is not null, then not all transactions were returned and more can be fetched. To fetch more transactions, call this endpoint again and set this query parameter to the value of the field 'next' that was previously returned. Repeat until the field next contains null.",
-            "required": false,
-            "allowEmptyValue": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "userId",
-            "in": "path",
-            "description": "Unique identifier of the User for which to list transactions.",
+            "description": "userId",
             "required": true,
             "schema": {
               "type": "string",
@@ -317,26 +273,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful",
+            "description": "Successfully retrieved the KYC report.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TransactionsPageDTO"
+                  "$ref": "#/components/schemas/KYCReport"
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
           "404": {
-            "description": "Not Found"
+            "description": "Either there is no user found for this id or there is no KYC report.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
-        },
-        "deprecated": false
+        }
       }
     },
     "/v1/users/{userId}/user-sites/{userSiteId}": {
@@ -348,9 +304,9 @@
         "operationId": "getUserSiteUsingGET",
         "parameters": [
           {
-            "name": "userSiteId",
+            "name": "userId",
             "in": "path",
-            "description": "The unique user-site identifier",
+            "description": "userId",
             "required": true,
             "schema": {
               "type": "string",
@@ -358,9 +314,9 @@
             }
           },
           {
-            "name": "userId",
+            "name": "userSiteId",
             "in": "path",
-            "description": "userId",
+            "description": "The unique user-site identifier",
             "required": true,
             "schema": {
               "type": "string",
@@ -384,8 +340,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       },
       "delete": {
         "tags": [
@@ -399,7 +354,7 @@
             "name": "PSU-IP-Address",
             "in": "header",
             "description": "The ipv4 or ipv6 address of the client-user performing an action. Fill this in when a user initiates this action.",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -434,8 +389,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v1/users/{userId}/connect": {
@@ -443,15 +397,15 @@
         "tags": [
           "user-sites"
         ],
-        "summary": "Initiate user-site",
+        "summary": "Connect a user-site",
         "description": "Get a form or url that the user needs to fill in or be redirected to respectively, in order to create a connection (user-site) to a site.",
-        "operationId": "initiateUserSiteUsingPOST",
+        "operationId": "connectUserSiteUsingPOST",
         "parameters": [
           {
             "name": "PSU-IP-Address",
             "in": "header",
             "description": "The ipv4 or ipv6 address of the client-user performing an action. Fill this in when a user initiates this action.",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -461,7 +415,6 @@
             "in": "query",
             "description": "The redirectUrl to use. Required for sites with a DIRECT_CONNECTION. Might be left empty in case of a SCRAPING site where there's no redirect. ",
             "required": false,
-            "allowEmptyValue": false,
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -507,8 +460,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v1/users/{userId}/user-sites/{userSiteId}/refresh": {
@@ -523,7 +475,7 @@
             "name": "PSU-IP-Address",
             "in": "header",
             "description": "The ipv4 or ipv6 address of the client-user performing an action. Fill this in when a user initiates this action.",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -568,8 +520,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v1/users/{userId}/user-sites/{userSiteId}/step": {
@@ -581,9 +532,9 @@
         "operationId": "getNextStepUsingGET",
         "parameters": [
           {
-            "name": "userSiteId",
+            "name": "userId",
             "in": "path",
-            "description": "The user-site id. This value is returned when you initiated the flow via POST /user-sites.",
+            "description": "userId",
             "required": true,
             "schema": {
               "type": "string",
@@ -591,9 +542,9 @@
             }
           },
           {
-            "name": "userId",
+            "name": "userSiteId",
             "in": "path",
-            "description": "userId",
+            "description": "The user-site id. This value is returned when you initiated the flow via POST /user-sites.",
             "required": true,
             "schema": {
               "type": "string",
@@ -608,6 +559,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LoginStep"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -627,8 +588,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v1/users/{userId}/user-sites/{userSiteId}/renew-access": {
@@ -644,7 +604,7 @@
             "name": "PSU-IP-Address",
             "in": "header",
             "description": "The ipv4 or ipv6 address of the client-user performing an action. Fill this in when a user initiates this action.",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -654,7 +614,6 @@
             "in": "query",
             "description": "The redirectUrl to use. Required for sites with a DIRECT_CONNECTION. Might be left empty in case of a SCRAPING site where there's no redirect. ",
             "required": false,
-            "allowEmptyValue": false,
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -706,8 +665,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v1/users/{userId}/payments/submit": {
@@ -723,7 +681,7 @@
             "name": "PSU-IP-Address",
             "in": "header",
             "description": "The ipv4 or ipv6 address of the client-user performing an action. This might be required for some banks.",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -743,20 +701,20 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SubmitSepaPaymentRequestDTO"
+                "$ref": "#/components/schemas/SubmitPaymentRequestDTO"
               }
             }
           },
-          "description": "submitSepaPaymentRequestDTO",
+          "description": "request",
           "required": true
         },
         "responses": {
           "200": {
             "description": "Successful",
             "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SepaPaymentDTO"
+                  "$ref": "#/components/schemas/PaymentDTO"
                 }
               }
             }
@@ -772,8 +730,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v1/users/{userId}/user-sites/refresh": {
@@ -788,7 +745,7 @@
             "name": "PSU-IP-Address",
             "in": "header",
             "description": "The ipv4 or ipv6 address of the client-user performing an action. Fill this in when a user initiates this action.",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -823,8 +780,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v2/sites/{siteId}": {
@@ -875,8 +831,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v1/users/{userId}/payments/{paymentId}": {
@@ -889,15 +844,6 @@
         "operationId": "getPaymentUsingGET",
         "parameters": [
           {
-            "name": "PSU-IP-Address",
-            "in": "header",
-            "description": "The ipv4 or ipv6 address of the client-user performing an action. This might be required for some banks.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "paymentId",
             "in": "path",
             "description": "paymentId",
@@ -905,6 +851,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "PSU-IP-Address",
+            "in": "header",
+            "description": "The ipv4 or ipv6 address of the client-user performing an action. This might be required for some banks.",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -924,7 +879,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SepaPaymentDTO"
+                  "$ref": "#/components/schemas/PaymentDTO"
                 }
               }
             }
@@ -943,8 +898,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v2/sites": {
@@ -961,7 +915,6 @@
             "in": "query",
             "description": "An optional redirectUrlId to use for filtering",
             "required": false,
-            "allowEmptyValue": false,
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -972,7 +925,6 @@
             "in": "query",
             "description": "An optional list of tags to use for filtering. Only sites containing ALL tags will be retrieved.",
             "required": false,
-            "allowEmptyValue": false,
             "explode": true,
             "schema": {
               "type": "array",
@@ -1001,8 +953,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v1/users/{userId}/payments/single/sepa": {
@@ -1017,7 +968,7 @@
             "name": "PSU-IP-Address",
             "in": "header",
             "description": "The ipv4 or ipv6 address of the client-user performing an action. Fill this in when a user initiates this action. If not, it can be left empty.",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -1086,8 +1037,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
     "/v1/users/{userId}/user-sites": {
@@ -1128,8 +1078,7 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       },
       "post": {
         "tags": [
@@ -1143,7 +1092,7 @@
             "name": "PSU-IP-Address",
             "in": "header",
             "description": "The ipv4 or ipv6 address of the client-user performing an action. Fill this in when a user initiates this action.",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -1167,7 +1116,8 @@
               }
             }
           },
-          "description": "An object containing a redirect-url or a filled-in form. You need to indicate which of the two you are sending by setting setting the field loginType to value URL or FORM respectively."
+          "description": "An object containing a redirect-url or a filled-in form. You need to indicate which of the two you are sending by setting setting the field loginType to value URL or FORM respectively.",
+          "required": true
         },
         "responses": {
           "200": {
@@ -1195,34 +1145,49 @@
           {
             "Bearer": []
           }
-        ],
-        "deprecated": false
+        ]
       }
     },
-    "/v1/users": {
-      "post": {
+    "/v1/users/{userId}/accounts": {
+      "get": {
         "tags": [
-          "users"
+          "accounts"
         ],
-        "summary": "Create a user",
-        "operationId": "createClientUserWithKYCUsingPOST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddUser"
-              }
+        "summary": "Retrieve a list of accounts that belong to a specific User.",
+        "description": "Retrieve a list of accounts for the user identified by the path parameter userId. The query parameter userSiteId can be used to narrow the results down to a specific UserSite.",
+        "operationId": "getAccountsUsingGET",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Unique identifier of the User for which to list accounts.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           },
-          "description": "The user's personal details. **Only required and allowed when YTS performs Know Your Customer (KYC) as a service for the client.**"
-        },
+          {
+            "name": "userSiteId",
+            "in": "query",
+            "description": "Optional identifier of the UserSite, if present only accounts linked to the UserSite will be returned.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
-          "201": {
-            "description": "Successfully created the user",
+          "200": {
+            "description": "Successful",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ClientUser"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountDTO"
+                  }
                 }
               }
             }
@@ -1236,8 +1201,114 @@
           "404": {
             "description": "Not Found"
           }
+        }
+      }
+    },
+    "/v1/users/{userId}/transactions": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Retrieve a list of transactions that belong to a specific User.",
+        "operationId": "getTransactionsUsingGET",
+        "parameters": [
+          {
+            "name": "accountIds",
+            "in": "query",
+            "description": "Optional list of accountIds to be used as filter. It can be provided as a comma-separated list.",
+            "required": false,
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "dateInterval",
+            "in": "query",
+            "description": "Date interval with end-date included for which the transactions should be retrieved. Current month if this parameter is not specified. (example: 2016-07-01/2016-07-31) Supported format: \n\r'start-date'/'end-date'\n\r'start-date'/'duration'\n\r'duration'/'end-date'.\n\rThe duration is in Period format: ISO-8601. The date format is also according to ISO-8601, i.e. the default Local Date (Time) Formatter",
+            "required": false,
+            "example": "2016-07-01/2016-07-31",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "next",
+            "in": "query",
+            "description": "Used for pagination. If an initial call to this endpoint returns an object where the field 'next' is not null, then not all transactions were returned and more can be fetched. To fetch more transactions, call this endpoint again and set this query parameter to the value of the field 'next' that was previously returned. Repeat until the field next contains null.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Unique identifier of the User for which to list transactions.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionsPageDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v2/users": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Create a user",
+        "operationId": "createClientUserWithKYCUsingPOST_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUser"
+              }
+            }
+          },
+          "description": "The user's personal details. **Only required and allowed when YTS performs Know Your Customer (KYC) as a service for the client.**",
+          "required": true
         },
-        "deprecated": false
+        "responses": {
+          "201": {
+            "description": "Successfully created the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientUser"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -1293,7 +1364,8 @@
           "chamberOfCommerceNumber": {
             "type": "string",
             "example": 12345678,
-            "description": "The Chamber of Commerce number"
+            "description": "The Chamber of Commerce number",
+            "pattern": "^[0-9]{8}$"
           }
         },
         "title": "AddClientUserEntity",
@@ -1312,40 +1384,60 @@
           "city": {
             "type": "string",
             "example": "Baarn",
-            "description": "The city of the address"
+            "description": "The city of the address",
+            "minLength": 1,
+            "maxLength": 100
           },
           "country": {
             "type": "string",
-            "example": "The Netherlands",
-            "description": "The country of the address"
+            "description": "A valid two-letter ISO country code (ISO 3166-1 alpha-2)"
           },
           "houseNumber": {
             "type": "string",
             "example": 1,
-            "description": "The house number of the address"
+            "description": "The house number of the address",
+            "minLength": 1,
+            "maxLength": 100
           },
           "houseNumberExtension": {
             "type": "string",
             "example": "b",
-            "description": "The optional extension of the house number"
+            "description": "The optional extension of the house number",
+            "minLength": 0,
+            "maxLength": 100
           },
           "postalCode": {
             "type": "string",
             "example": "3744 AA",
-            "description": "The postal code or zipcode of the address"
+            "description": "The postal code or zipcode of the address",
+            "minLength": 1,
+            "maxLength": 100
           },
           "province": {
             "type": "string",
             "example": "Utrecht",
-            "description": "The optional province of state of the address"
+            "description": "The optional province of state of the address",
+            "minLength": 0,
+            "maxLength": 100
           },
           "streetName": {
             "type": "string",
             "example": "Amsterdamsestraatweg",
-            "description": "The street name of the address"
+            "description": "The street name of the address",
+            "minLength": 1,
+            "maxLength": 100
           }
         },
         "title": "Address"
+      },
+      "Attachment": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string"
+          }
+        },
+        "title": "Attachment"
       },
       "ClientUser": {
         "type": "object",
@@ -1369,7 +1461,7 @@
         "title": "ClientUser",
         "description": "The client-user is the end-user of a client."
       },
-      "EntityData": {
+      "EntityDataReq": {
         "type": "object",
         "required": [
           "chamberOfCommerceNumber",
@@ -1382,13 +1474,15 @@
           "chamberOfCommerceNumber": {
             "type": "string",
             "example": 12345678,
-            "description": "The chamber of commerce number where the entity is registered on."
+            "description": "The chamber of commerce number where the entity is registered on.",
+            "pattern": "^[0-9]{8}$"
           },
           "intermediaryShareholderEntity": {
             "type": "array",
             "description": "Information you have to provide regarding the intermediate shareholder entity.",
+            "uniqueItems": true,
             "items": {
-              "$ref": "#/components/schemas/IntermediaryShareholderEntity"
+              "$ref": "#/components/schemas/IntermediaryShareholderEntityReq"
             }
           },
           "legalForm": {
@@ -1396,24 +1490,26 @@
             "description": "The legal form the entity is registered on. For more information: https://business.gov.nl/starting-your-business/choosing-a-business-structure/business-structures-in-the-netherlands-overview/",
             "enum": [
               "BV",
-              "NV",
-              "VOF",
+              "COOPERATIE",
               "CV",
               "EENMANSZAAK",
-              "STICHTING",
-              "MAATSCHAP",
-              "COOPERATIE_EN_ONDERLINGE_WAARBORGMAATSCHAPPIJ",
               "KERKGENOOTSCHAP",
-              "VERENIGING"
+              "MAATSCHAP",
+              "NV",
+              "STICHTING",
+              "VERENIGING",
+              "VOF"
             ]
           },
           "legalName": {
             "type": "string",
             "example": "ACME corp.",
-            "description": "The legal name of the entity registered at the chamber of commerce."
+            "description": "The legal name of the entity registered at the chamber of commerce.",
+            "minLength": 1,
+            "maxLength": 256
           },
           "legalRepresentative": {
-            "$ref": "#/components/schemas/LegalRepresentative"
+            "$ref": "#/components/schemas/LegalRepresentativeReq"
           },
           "operationalAddress": {
             "$ref": "#/components/schemas/Address"
@@ -1431,15 +1527,16 @@
               "ACME"
             ],
             "description": "One or more optional trading names the organization operates under.",
+            "uniqueItems": true,
             "items": {
               "type": "string"
             }
           },
           "ultimateBeneficialOwner": {
-            "$ref": "#/components/schemas/UltimateBeneficialOwner"
+            "$ref": "#/components/schemas/UltimateBeneficialOwnerReq"
           }
         },
-        "title": "EntityData",
+        "title": "EntityDataReq",
         "description": "Information you have to provide for KYC services regarding the entity"
       },
       "EntityDataRequest": {
@@ -1449,21 +1546,211 @@
         ],
         "properties": {
           "entity": {
-            "$ref": "#/components/schemas/EntityData"
+            "$ref": "#/components/schemas/EntityDataReq"
           }
         },
         "title": "EntityDataRequest",
         "description": "Request object for providing entity data for an entity user"
       },
+      "EntityDataRes": {
+        "type": "object",
+        "required": [
+          "chamberOfCommerceNumber",
+          "legalForm",
+          "legalName",
+          "legalRepresentative",
+          "ultimateBeneficialOwner"
+        ],
+        "properties": {
+          "chamberOfCommerceNumber": {
+            "type": "string",
+            "example": 12345678,
+            "description": "The chamber of commerce number where the entity is registered on.",
+            "pattern": "^[0-9]{8}$"
+          },
+          "intermediaryShareholderEntity": {
+            "type": "array",
+            "description": "Information you have to provide regarding the intermediate shareholder entity.",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/IntermediaryShareholderEntityRes"
+            }
+          },
+          "legalForm": {
+            "type": "string",
+            "description": "The legal form the entity is registered on. For more information: https://business.gov.nl/starting-your-business/choosing-a-business-structure/business-structures-in-the-netherlands-overview/",
+            "enum": [
+              "BV",
+              "COOPERATIE",
+              "CV",
+              "EENMANSZAAK",
+              "KERKGENOOTSCHAP",
+              "MAATSCHAP",
+              "NV",
+              "STICHTING",
+              "VERENIGING",
+              "VOF"
+            ]
+          },
+          "legalName": {
+            "type": "string",
+            "example": "ACME corp.",
+            "description": "The legal name of the entity registered at the chamber of commerce.",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "legalRepresentative": {
+            "$ref": "#/components/schemas/LegalRepresentativeRes"
+          },
+          "operationalAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "registeredAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "sbiCode": {
+            "type": "string",
+            "description": "An SBI code describes the main activity of a entity. All companies with similar business activities share the same SBI code. For more information: https://business.gov.nl/running-your-business/business-management/administration/sbi-codes/"
+          },
+          "tradingName": {
+            "type": "array",
+            "example": [
+              "ACME"
+            ],
+            "description": "One or more optional trading names the organization operates under.",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "ultimateBeneficialOwner": {
+            "$ref": "#/components/schemas/UltimateBeneficialOwnerRes"
+          }
+        },
+        "title": "EntityDataRes",
+        "description": "Information you have to provide for KYC services regarding the entity"
+      },
       "EntityDataResponse": {
         "type": "object",
         "properties": {
           "entity": {
-            "$ref": "#/components/schemas/EntityData"
+            "$ref": "#/components/schemas/EntityDataRes"
           }
         },
         "title": "EntityDataResponse",
         "description": "Response object containing entity data for an entity user"
+      },
+      "EntityRiskLevel": {
+        "type": "object",
+        "properties": {
+          "complexOrganisationalStructureRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "countryRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "engagedActivityRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "nameScreeningRiskLevels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "HIGH",
+                "LOW",
+                "MEDIUM",
+                "PROHIBITED"
+              ]
+            }
+          },
+          "sbiRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          }
+        },
+        "title": "EntityRiskLevel"
+      },
+      "EntityRiskProfile": {
+        "type": "object",
+        "properties": {
+          "entity": {
+            "$ref": "#/components/schemas/EntityRiskLevel"
+          },
+          "finalRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "intermediaryShareholderEntities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntermediaryShareholderEntityRiskLevel"
+            }
+          },
+          "legalRepresentative": {
+            "$ref": "#/components/schemas/LegalRepresentativeRiskLevel"
+          },
+          "ultimateBeneficialOwners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UltimateBeneficialOwnerRiskLevel"
+            }
+          }
+        },
+        "title": "EntityRiskProfile"
+      },
+      "EntityUserAcceptanceRecommendation": {
+        "type": "object",
+        "properties": {
+          "dateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "engagedActivity": {
+            "type": "string",
+            "enum": [
+              "AIS",
+              "AIS_PIS",
+              "PIS"
+            ]
+          },
+          "nextPeriodicReviewDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "riskProfile": {
+            "$ref": "#/components/schemas/EntityRiskProfile"
+          }
+        },
+        "title": "EntityUserAcceptanceRecommendation"
       },
       "Error": {
         "type": "object",
@@ -1480,7 +1767,71 @@
         "title": "Error",
         "description": "Describes an error in the system"
       },
+      "InputCorrection": {
+        "type": "object",
+        "properties": {
+          "changeReason": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "newValue": {
+            "type": "string"
+          },
+          "oldValue": {
+            "type": "string"
+          }
+        },
+        "title": "InputCorrection"
+      },
       "IntermediaryShareholderEntity": {
+        "type": "object",
+        "properties": {
+          "countryOfIncorporation": {
+            "type": "string"
+          },
+          "countryOfIncorporationRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "inputCorrections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InputCorrection"
+            }
+          },
+          "legalName": {
+            "type": "string"
+          },
+          "nameScreening": {
+            "$ref": "#/components/schemas/NameScreening"
+          },
+          "ownershipLevel": {
+            "type": "string",
+            "enum": [
+              "DIRECT",
+              "INDIRECT"
+            ]
+          },
+          "ownershipPercentage": {
+            "type": "string",
+            "enum": [
+              "FROM_0_TO_25",
+              "FROM_25_TO_50",
+              "FROM_50_TO_75",
+              "FROM_75_TO_100"
+            ]
+          }
+        },
+        "title": "IntermediaryShareholderEntity"
+      },
+      "IntermediaryShareholderEntityReq": {
         "type": "object",
         "required": [
           "countryOfIncorporation",
@@ -1491,11 +1842,13 @@
         "properties": {
           "countryOfIncorporation": {
             "type": "string",
-            "description": "A valid 2-digit ISO country code (ISO 3166-1 alpha-2)"
+            "description": "A valid two-letter ISO country code (ISO 3166-1 alpha-2)"
           },
           "legalName": {
             "type": "string",
-            "description": "The legal name of the entity registered at the chamber of commerce."
+            "description": "The legal name of the entity registered at the chamber of commerce.",
+            "minLength": 1,
+            "maxLength": 256
           },
           "ownershipLevel": {
             "type": "string",
@@ -1516,10 +1869,286 @@
             ]
           }
         },
-        "title": "IntermediaryShareholderEntity",
+        "title": "IntermediaryShareholderEntityReq",
         "description": "Information you have to provide regarding an intermediate shareholder entity."
       },
+      "IntermediaryShareholderEntityRes": {
+        "type": "object",
+        "required": [
+          "countryOfIncorporation",
+          "legalName",
+          "ownershipLevel",
+          "ownershipPercentage"
+        ],
+        "properties": {
+          "countryOfIncorporation": {
+            "type": "string",
+            "description": "A valid two-letter ISO country code (ISO 3166-1 alpha-2)"
+          },
+          "legalName": {
+            "type": "string",
+            "description": "The legal name of the entity registered at the chamber of commerce.",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "ownershipLevel": {
+            "type": "string",
+            "description": "Indicates if the ownership is direct or indirect.",
+            "enum": [
+              "DIRECT",
+              "INDIRECT"
+            ]
+          },
+          "ownershipPercentage": {
+            "type": "string",
+            "description": "Percentage ranges from options: 0 up to but not including 25%, 25% up to but not including 50%, 50 up to but not including 75%, 75% up to and including 100%",
+            "enum": [
+              "FROM_0_TO_25",
+              "FROM_25_TO_50",
+              "FROM_50_TO_75",
+              "FROM_75_TO_100"
+            ]
+          }
+        },
+        "title": "IntermediaryShareholderEntityRes",
+        "description": "Information you have to provide regarding an intermediate shareholder entity."
+      },
+      "IntermediaryShareholderEntityRiskLevel": {
+        "type": "object",
+        "properties": {
+          "countryRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "nameScreeningRiskLevels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "HIGH",
+                "LOW",
+                "MEDIUM",
+                "PROHIBITED"
+              ]
+            }
+          }
+        },
+        "title": "IntermediaryShareholderEntityRiskLevel"
+      },
+      "KYCAddress": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "houseNumber": {
+            "type": "string"
+          },
+          "houseNumberExtension": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "province": {
+            "type": "string"
+          },
+          "streetName": {
+            "type": "string"
+          }
+        },
+        "title": "KYCAddress"
+      },
+      "KYCEntityReport": {
+        "title": "KYCEntityReport",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/KYCReport"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              },
+              "entity": {
+                "$ref": "#/components/schemas/ReportEntityData"
+              },
+              "reportType": {
+                "type": "string"
+              },
+              "userAcceptanceRecommendation": {
+                "$ref": "#/components/schemas/EntityUserAcceptanceRecommendation"
+              }
+            },
+            "title": "KYCEntityReport",
+            "description": "KYC report for an entity user"
+          }
+        ],
+        "description": "KYC report for an entity user"
+      },
+      "KYCPrivateIndividualReport": {
+        "title": "KYCPrivateIndividualReport",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/KYCReport"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              },
+              "reportType": {
+                "type": "string"
+              },
+              "user": {
+                "$ref": "#/components/schemas/ReportPrivateIndividualData"
+              },
+              "userAcceptanceRecommendation": {
+                "$ref": "#/components/schemas/PrivateIndividualUserAcceptanceRecommendation"
+              }
+            },
+            "title": "KYCPrivateIndividualReport",
+            "description": "KYC report for a private individual user"
+          }
+        ],
+        "description": "KYC report for a private individual user"
+      },
+      "KYCReport": {
+        "type": "object",
+        "discriminator": {
+          "propertyName": "reportType"
+        },
+        "properties": {
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            }
+          },
+          "reportType": {
+            "type": "string"
+          }
+        },
+        "title": "KYCReport",
+        "description": "The KYC report container for the entity or private individual user"
+      },
+      "KYCRiskAssessmentAddress": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "countryRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "houseNumber": {
+            "type": "string"
+          },
+          "houseNumberExtension": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "province": {
+            "type": "string"
+          },
+          "streetName": {
+            "type": "string"
+          }
+        },
+        "title": "KYCRiskAssessmentAddress"
+      },
+      "KYCStatus": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "The KYC status of a user",
+            "enum": [
+              "COMPLETED",
+              "IDENTIFICATION",
+              "NAMESCREENING",
+              "NOT_STARTED",
+              "VERIFICATION"
+            ]
+          }
+        },
+        "title": "KYCStatus",
+        "description": "The KYC status of a user"
+      },
       "LegalRepresentative": {
+        "type": "object",
+        "properties": {
+          "capacity": {
+            "type": "string",
+            "enum": [
+              "DIRECTOR",
+              "OWNER",
+              "POWER_OF_ATTORNEY"
+            ]
+          },
+          "countryOfResidence": {
+            "type": "string"
+          },
+          "countryOfResidenceRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date"
+          },
+          "inputCorrections": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/InputCorrection"
+            }
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "nameScreening": {
+            "$ref": "#/components/schemas/NameScreening"
+          }
+        },
+        "title": "LegalRepresentative"
+      },
+      "LegalRepresentativeReq": {
         "type": "object",
         "required": [
           "capacity",
@@ -1533,13 +2162,13 @@
             "description": "The capacity or role of the legal representative in the entity.",
             "enum": [
               "DIRECTOR",
-              "POWER_OF_ATTORNEY",
-              "OWNER"
+              "OWNER",
+              "POWER_OF_ATTORNEY"
             ]
           },
           "countryOfResidence": {
             "type": "string",
-            "description": "A valid 2-digit ISO country code (ISO 3166-1 alpha-2)"
+            "description": "A valid two-letter ISO country code (ISO 3166-1 alpha-2)"
           },
           "dateOfBirth": {
             "type": "string",
@@ -1551,8 +2180,70 @@
             "$ref": "#/components/schemas/Name"
           }
         },
-        "title": "LegalRepresentative",
+        "title": "LegalRepresentativeReq",
         "description": "Information you have to provide regarding the legal representative of the entity."
+      },
+      "LegalRepresentativeRes": {
+        "type": "object",
+        "required": [
+          "capacity",
+          "countryOfResidence",
+          "dateOfBirth",
+          "name"
+        ],
+        "properties": {
+          "capacity": {
+            "type": "string",
+            "description": "The capacity or role of the legal representative in the entity.",
+            "enum": [
+              "DIRECTOR",
+              "OWNER",
+              "POWER_OF_ATTORNEY"
+            ]
+          },
+          "countryOfResidence": {
+            "type": "string",
+            "description": "A valid two-letter ISO country code (ISO 3166-1 alpha-2)"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "example": "1967-04-27",
+            "description": "The date of birth from the Legal Representative"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          }
+        },
+        "title": "LegalRepresentativeRes",
+        "description": "Information you have to provide regarding the legal representative of the entity."
+      },
+      "LegalRepresentativeRiskLevel": {
+        "type": "object",
+        "properties": {
+          "countryRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "nameScreeningRiskLevels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "HIGH",
+                "LOW",
+                "MEDIUM",
+                "PROHIBITED"
+              ]
+            }
+          }
+        },
+        "title": "LegalRepresentativeRiskLevel"
       },
       "Name": {
         "type": "object",
@@ -1564,36 +2255,322 @@
           "firstName": {
             "type": "string",
             "example": "Willem-Alexander Claus George Ferdinand",
-            "description": "The first name of a user including optional middle names separated by spaces"
+            "description": "The first name of a user including optional middle names separated by spaces",
+            "minLength": 1,
+            "maxLength": 100
           },
           "lastName": {
             "type": "string",
             "example": "van Oranje-Nassau",
-            "description": "The last name of a user"
+            "description": "The last name of a user",
+            "minLength": 1,
+            "maxLength": 100
           }
         },
         "title": "Name",
         "description": "Name of a person in separate parts"
       },
+      "NameScreening": {
+        "type": "object",
+        "properties": {
+          "hits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NameScreeningAlertHit"
+            }
+          },
+          "screeningDateTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "title": "NameScreening"
+      },
+      "NameScreeningAlertHit": {
+        "type": "object",
+        "properties": {
+          "reasonListed": {
+            "type": "string"
+          },
+          "riskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "FALSE_POSITIVE",
+              "NONE",
+              "TRUE_MATCH"
+            ]
+          }
+        },
+        "title": "NameScreeningAlertHit"
+      },
+      "PrivateIndividualRiskLevel": {
+        "type": "object",
+        "properties": {
+          "countryRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "engagedActivityRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "nameScreeningRiskLevels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "HIGH",
+                "LOW",
+                "MEDIUM",
+                "PROHIBITED"
+              ]
+            }
+          }
+        },
+        "title": "PrivateIndividualRiskLevel"
+      },
+      "PrivateIndividualRiskProfile": {
+        "type": "object",
+        "properties": {
+          "finalRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "privateIndividual": {
+            "$ref": "#/components/schemas/PrivateIndividualRiskLevel"
+          }
+        },
+        "title": "PrivateIndividualRiskProfile"
+      },
+      "PrivateIndividualUserAcceptanceRecommendation": {
+        "type": "object",
+        "properties": {
+          "dateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "engagedActivity": {
+            "type": "string",
+            "enum": [
+              "AIS",
+              "AIS_PIS",
+              "PIS"
+            ]
+          },
+          "nextPeriodicReviewDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "riskProfile": {
+            "$ref": "#/components/schemas/PrivateIndividualRiskProfile"
+          }
+        },
+        "title": "PrivateIndividualUserAcceptanceRecommendation"
+      },
+      "ReportEntityData": {
+        "type": "object",
+        "properties": {
+          "chamberOfCommerceNumber": {
+            "type": "string"
+          },
+          "complexOrganisationalStructureRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "inputCorrections": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/InputCorrection"
+            }
+          },
+          "intermediaryShareholderEntities": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/IntermediaryShareholderEntity"
+            }
+          },
+          "legalForm": {
+            "type": "string",
+            "enum": [
+              "BV",
+              "COOPERATIE",
+              "CV",
+              "EENMANSZAAK",
+              "KERKGENOOTSCHAP",
+              "MAATSCHAP",
+              "NV",
+              "STICHTING",
+              "VERENIGING",
+              "VOF"
+            ]
+          },
+          "legalRepresentative": {
+            "$ref": "#/components/schemas/LegalRepresentative"
+          },
+          "nameScreeningDTO": {
+            "$ref": "#/components/schemas/NameScreening"
+          },
+          "operationalAddress": {
+            "$ref": "#/components/schemas/KYCAddress"
+          },
+          "registeredAddress": {
+            "$ref": "#/components/schemas/KYCRiskAssessmentAddress"
+          },
+          "sbiCode": {
+            "type": "string"
+          },
+          "sbiCodeRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "tradingNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ultimateBeneficialOwners": {
+            "$ref": "#/components/schemas/UltimateBeneficialOwner"
+          }
+        },
+        "title": "ReportEntityData",
+        "description": "KYC report for an entity user"
+      },
+      "ReportPrivateIndividualData": {
+        "type": "object",
+        "properties": {
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date"
+          },
+          "inputCorrections": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/InputCorrection"
+            }
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "nameScreening": {
+            "$ref": "#/components/schemas/NameScreening"
+          },
+          "residentialAddress": {
+            "$ref": "#/components/schemas/KYCRiskAssessmentAddress"
+          }
+        },
+        "title": "ReportPrivateIndividualData",
+        "description": "KYC report for a private individual user"
+      },
       "UltimateBeneficialOwner": {
         "type": "object",
         "properties": {
           "noUBOComment": {
-            "type": "string",
-            "description": "When no Ultimate Beneficial Owner information is provided is it mandatory to provide a comment stating why no information is provided. Up to 256 characters are allowed."
+            "type": "string"
           },
           "ultimateBeneficialOwnerDetails": {
             "type": "array",
-            "description": "A list of one or more ultimate beneficial owners, or null if no information can be provided. In the latter case, the noUBOComment field should be populated.",
+            "uniqueItems": true,
             "items": {
               "$ref": "#/components/schemas/UltimateBeneficialOwnerDetails"
             }
           }
         },
-        "title": "UltimateBeneficialOwner",
-        "description": "The information required for the Ultimate Beneficial Owners of the entity."
+        "title": "UltimateBeneficialOwner"
       },
       "UltimateBeneficialOwnerDetails": {
+        "type": "object",
+        "properties": {
+          "countryOfResidence": {
+            "type": "string"
+          },
+          "countryOfResidenceRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inputCorrections": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/InputCorrection"
+            }
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "nameScreening": {
+            "$ref": "#/components/schemas/NameScreening"
+          },
+          "ownershipLevel": {
+            "type": "string",
+            "enum": [
+              "DIRECT",
+              "INDIRECT"
+            ]
+          },
+          "ownershipPercentage": {
+            "type": "string",
+            "enum": [
+              "FROM_0_TO_25",
+              "FROM_25_TO_50",
+              "FROM_50_TO_75",
+              "FROM_75_TO_100"
+            ]
+          }
+        },
+        "title": "UltimateBeneficialOwnerDetails"
+      },
+      "UltimateBeneficialOwnerDetailsReq": {
         "type": "object",
         "required": [
           "countryOfResidence",
@@ -1605,7 +2582,7 @@
         "properties": {
           "countryOfResidence": {
             "type": "string",
-            "description": "A valid 2-digit ISO country code (ISO 3166-1 alpha-2)"
+            "description": "A valid two-letter ISO country code (ISO 3166-1 alpha-2)"
           },
           "dateOfBirth": {
             "type": "string",
@@ -1635,8 +2612,2136 @@
             ]
           }
         },
-        "title": "UltimateBeneficialOwnerDetails",
+        "title": "UltimateBeneficialOwnerDetailsReq",
         "description": "The information details required for the Ultimate Beneficial Owners of the entity"
+      },
+      "UltimateBeneficialOwnerDetailsRes": {
+        "type": "object",
+        "required": [
+          "countryOfResidence",
+          "dateOfBirth",
+          "name",
+          "ownershipLevel",
+          "ownershipPercentage"
+        ],
+        "properties": {
+          "countryOfResidence": {
+            "type": "string",
+            "description": "A valid two-letter ISO country code (ISO 3166-1 alpha-2)"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "example": "1967-04-27",
+            "description": "The date of birth of the Ultimate Beneficial Owner"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "ownershipLevel": {
+            "type": "string",
+            "description": "Indicates if the ownership is direct or indirect.",
+            "enum": [
+              "DIRECT",
+              "INDIRECT"
+            ]
+          },
+          "ownershipPercentage": {
+            "type": "string",
+            "description": "Percentage ranges from options: 0 up to but not including 25%, 25% up to but not including 50%, 50 up to but not including 75%, 75% up to and including 100%",
+            "enum": [
+              "FROM_0_TO_25",
+              "FROM_25_TO_50",
+              "FROM_50_TO_75",
+              "FROM_75_TO_100"
+            ]
+          }
+        },
+        "title": "UltimateBeneficialOwnerDetailsRes",
+        "description": "The information details required for the Ultimate Beneficial Owners of the entity"
+      },
+      "UltimateBeneficialOwnerReq": {
+        "type": "object",
+        "properties": {
+          "noUBOComment": {
+            "type": "string",
+            "description": "When no Ultimate Beneficial Owner information is provided is it mandatory to provide a comment stating why no information is provided. Up to 256 characters are allowed.",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "ultimateBeneficialOwnerDetails": {
+            "type": "array",
+            "description": "A list of one or more ultimate beneficial owners, or null if no information can be provided. In the latter case, the noUBOComment field should be populated.",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/UltimateBeneficialOwnerDetailsReq"
+            }
+          }
+        },
+        "title": "UltimateBeneficialOwnerReq",
+        "description": "The information required for the Ultimate Beneficial Owners of the entity."
+      },
+      "UltimateBeneficialOwnerRes": {
+        "type": "object",
+        "properties": {
+          "noUBOComment": {
+            "type": "string",
+            "description": "When no Ultimate Beneficial Owner information is provided is it mandatory to provide a comment stating why no information is provided. Up to 256 characters are allowed.",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "ultimateBeneficialOwnerDetails": {
+            "type": "array",
+            "description": "A list of one or more ultimate beneficial owners, or null if no information can be provided. In the latter case, the noUBOComment field should be populated.",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/UltimateBeneficialOwnerDetailsRes"
+            }
+          }
+        },
+        "title": "UltimateBeneficialOwnerRes",
+        "description": "The information required for the Ultimate Beneficial Owners of the entity."
+      },
+      "UltimateBeneficialOwnerRiskLevel": {
+        "type": "object",
+        "properties": {
+          "countryRiskLevel": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "LOW",
+              "MEDIUM",
+              "PROHIBITED"
+            ]
+          },
+          "nameScreeningRiskLevels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "HIGH",
+                "LOW",
+                "MEDIUM",
+                "PROHIBITED"
+              ]
+            }
+          }
+        },
+        "title": "UltimateBeneficialOwnerRiskLevel"
+      },
+      "AIS": {
+        "type": "object",
+        "required": [
+          "hasFormSteps",
+          "hasRedirectSteps",
+          "onboarded"
+        ],
+        "properties": {
+          "hasFormSteps": {
+            "type": "boolean",
+            "description": "If the authorization process involves a form step this is true. (usually false, but true for scrapers, or more complicated banks."
+          },
+          "hasRedirectSteps": {
+            "type": "boolean",
+            "description": "If the authorization process involves a redirect this is true."
+          },
+          "onboarded": {
+            "$ref": "#/components/schemas/Onboarded"
+          }
+        },
+        "title": "AIS",
+        "description": "AIS, Account Information Service."
+      },
+      "BicDynamicFieldDTO": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "title": "BicDynamicFieldDTO",
+        "description": "Describes whether the BIC can be submitted when initiating a payment for this site."
+      },
+      "CHOICE": {
+        "title": "CHOICE",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "childComponents": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FormComponentDTO"
+                }
+              },
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "containerType": {
+                "type": "string",
+                "enum": [
+                  "CHOICE",
+                  "FORM",
+                  "MULTI",
+                  "SECTION"
+                ]
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "CHOICE"
+          }
+        ]
+      },
+      "CONTAINER": {
+        "title": "CONTAINER",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "childComponents": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FormComponentDTO"
+                }
+              },
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "containerType": {
+                "type": "string",
+                "enum": [
+                  "CHOICE",
+                  "FORM",
+                  "MULTI",
+                  "SECTION"
+                ]
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "CONTAINER"
+          }
+        ]
+      },
+      "CipherDetails": {
+        "type": "object",
+        "required": [
+          "cipher",
+          "publicKey"
+        ],
+        "properties": {
+          "cipher": {
+            "type": "string",
+            "description": "Algorithm/Mode/Padding to use with asymmetric per field encryption"
+          },
+          "publicKey": {
+            "type": "string",
+            "description": "Public key with which to encrypt credentials"
+          }
+        },
+        "title": "CipherDetails",
+        "description": "Cipher configuration and public key used for encryption"
+      },
+      "ClientSiteEntity": {
+        "type": "object",
+        "required": [
+          "connectionType",
+          "health",
+          "iconLink",
+          "noLongerSupported"
+        ],
+        "properties": {
+          "availableInCountries": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "AT",
+                "AU",
+                "BE",
+                "CZ",
+                "DE",
+                "ES",
+                "FM",
+                "FR",
+                "GB",
+                "IT",
+                "LU",
+                "NL",
+                "PL",
+                "RO",
+                "TH",
+                "XF"
+              ]
+            }
+          },
+          "connectionType": {
+            "type": "string",
+            "description": "Indicates whether this is a direct connection or through a scraper.",
+            "enum": [
+              "DIRECT_CONNECTION",
+              "SCRAPER"
+            ]
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "A flag which enables or disables the site, and it is controlled by the client."
+          },
+          "groupingBy": {
+            "type": "string"
+          },
+          "health": {
+            "$ref": "#/components/schemas/SiteConnectionHealthStatus"
+          },
+          "iconLink": {
+            "type": "string",
+            "example": "/content/images/sites/icons/96da1236-1bf7-45e0-b87d-1fd8e264255b.png"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "loginType": {
+            "type": "string",
+            "enum": [
+              "FORM",
+              "URL"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "noLongerSupported": {
+            "type": "boolean",
+            "description": "If set to true, this site is no longer supported."
+          },
+          "services": {
+            "$ref": "#/components/schemas/Services"
+          },
+          "supportedAccountTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "CREDIT_CARD",
+                "CURRENT_ACCOUNT",
+                "INVESTMENT",
+                "PENSION",
+                "PREPAID_ACCOUNT",
+                "SAVINGS_ACCOUNT"
+              ]
+            }
+          },
+          "tags": {
+            "type": "array",
+            "description": "The list of tags added to the site. This can be used to retrieve a specific site list and the tags are controlled by the client.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "title": "ClientSiteEntity",
+        "description": "A site can be a bank or a creditcard company, etc."
+      },
+      "CreditorAgentNameDynamicFieldDTO": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "title": "CreditorAgentNameDynamicFieldDTO",
+        "description": "Describes whether the Organization Name can be submitted when initiating a payment for this site."
+      },
+      "CreditorPostalAddressLineDynamicFieldDTO": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "title": "CreditorPostalAddressLineDynamicFieldDTO",
+        "description": "Describes whether the creditor postal address can be submitted when initiating a payment for this site."
+      },
+      "CreditorPostalCountryDynamicFieldDTO": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "title": "CreditorPostalCountryDynamicFieldDTO",
+        "description": "Describes whether the creditor postal country can be submitted when initiating a payment for this site."
+      },
+      "DATE": {
+        "title": "DATE",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "dateFormat": {
+                "type": "string"
+              },
+              "defaultValue": {
+                "type": "string",
+                "format": "date"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "fieldType": {
+                "type": "string",
+                "enum": [
+                  "DATE",
+                  "EXPLANATION",
+                  "IBAN",
+                  "NUMBER",
+                  "PASSWORD",
+                  "RADIO",
+                  "SELECT",
+                  "TEXT",
+                  "TEXT_AREA"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "maxDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "minDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "DATE"
+          }
+        ]
+      },
+      "DebtorNameDynamicFieldDTO": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "title": "DebtorNameDynamicFieldDTO",
+        "description": "Describes whether the debtor name can be submitted when initiating a payment for this site."
+      },
+      "DynamicFields": {
+        "type": "object",
+        "properties": {
+          "creditorAgentBic": {
+            "type": "string",
+            "description": "The BIC of the financial institution servicing an account for the creditor."
+          },
+          "creditorAgentName": {
+            "type": "string",
+            "description": "The name of the financial institution servicing an account for the creditor."
+          },
+          "creditorPostalAddressLine": {
+            "type": "string",
+            "description": "Unstructured address, must embed zip code and town name"
+          },
+          "creditorPostalCountry": {
+            "type": "string",
+            "description": "Country in which a person resides or from which the affairs of that company are directed."
+          },
+          "debtorName": {
+            "type": "string",
+            "description": "Debtor first and last name"
+          },
+          "remittanceInformationStructured": {
+            "type": "string",
+            "description": "Unique reference which can be used to match commercial invoices."
+          }
+        },
+        "title": "DynamicFields",
+        "description": "Some banks allow for additional information to be sent when making a payment. This model allows you to send any of these dynamic, bank specific fields."
+      },
+      "DynamicFieldsDTO": {
+        "type": "object",
+        "properties": {
+          "creditorAgentBic": {
+            "$ref": "#/components/schemas/BicDynamicFieldDTO"
+          },
+          "creditorAgentName": {
+            "$ref": "#/components/schemas/CreditorAgentNameDynamicFieldDTO"
+          },
+          "creditorPostalAddressLine": {
+            "$ref": "#/components/schemas/CreditorPostalAddressLineDynamicFieldDTO"
+          },
+          "creditorPostalCountry": {
+            "$ref": "#/components/schemas/CreditorPostalCountryDynamicFieldDTO"
+          },
+          "debtorName": {
+            "$ref": "#/components/schemas/DebtorNameDynamicFieldDTO"
+          },
+          "remittanceInformationStructured": {
+            "$ref": "#/components/schemas/RemittanceInformationStructuredDynamicFieldDTO"
+          }
+        },
+        "title": "DynamicFieldsDTO",
+        "description": "Describes the types of dynamic fields that are available for the site. Also shows whether the field is required when initiating a payment."
+      },
+      "EXPLANATION": {
+        "title": "EXPLANATION",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "fieldType": {
+                "type": "string",
+                "enum": [
+                  "DATE",
+                  "EXPLANATION",
+                  "IBAN",
+                  "NUMBER",
+                  "PASSWORD",
+                  "RADIO",
+                  "SELECT",
+                  "TEXT",
+                  "TEXT_AREA"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "EXPLANATION",
+            "description": "Form field with a descriptive message"
+          }
+        ],
+        "description": "Form field with a descriptive message"
+      },
+      "EncryptionDetails": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "cipherDetails": {
+            "$ref": "#/components/schemas/CipherDetails"
+          },
+          "jweDetails": {
+            "$ref": "#/components/schemas/JWEDetails"
+          },
+          "symmetricEncryptionWithRSAKeyExchangeDetails": {
+            "$ref": "#/components/schemas/SymmetricKeyEncryptionDetails"
+          },
+          "type": {
+            "type": "string",
+            "description": "Encryption type; use this to switch between alternative implementations",
+            "enum": [
+              "CIPHER",
+              "JWE",
+              "NONE",
+              "SYMMETRIC_ENCRYPTION_WITH_RSA_KEY_EXCHANGE"
+            ]
+          }
+        },
+        "title": "EncryptionDetails",
+        "description": "Configuration details describing the encryption algorithm."
+      },
+      "FORM": {
+        "title": "FORM",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LoginDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "loginType"
+            ],
+            "properties": {
+              "filledInFormValues": {
+                "type": "array",
+                "description": "The list of filled-in form values.",
+                "items": {
+                  "$ref": "#/components/schemas/FilledInFormValue"
+                }
+              },
+              "loginType": {
+                "type": "string",
+                "enum": [
+                  "FORM",
+                  "URL"
+                ]
+              },
+              "stateId": {
+                "type": "string",
+                "description": "The state-id that is used to determine which process to relate this form login to. Think of it like a session."
+              }
+            },
+            "title": "FORM",
+            "description": "A container object with the filled-in form values needed for login."
+          }
+        ],
+        "description": "A container object with the filled-in form values needed for login."
+      },
+      "Field": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "title": "Field",
+        "description": "Describes feature/property/field details."
+      },
+      "FilledInFormValue": {
+        "type": "object",
+        "required": [
+          "fieldId",
+          "value"
+        ],
+        "properties": {
+          "fieldId": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 1024
+          },
+          "value": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 10240
+          }
+        },
+        "title": "FilledInFormValue",
+        "description": "Contains the unique field identifier and its filled-in value."
+      },
+      "FormComponentDTO": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "properties": {
+          "componentType": {
+            "type": "string",
+            "enum": [
+              "CONTAINER",
+              "FIELD"
+            ]
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "optional": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "title": "FormComponentDTO",
+        "description": "The type of form component "
+      },
+      "FormStepObject": {
+        "type": "object",
+        "required": [
+          "encryption",
+          "formComponents",
+          "stateId"
+        ],
+        "properties": {
+          "encryption": {
+            "$ref": "#/components/schemas/EncryptionDetails"
+          },
+          "explanationField": {
+            "$ref": "#/components/schemas/EXPLANATION"
+          },
+          "formComponents": {
+            "type": "array",
+            "description": "Array with form components",
+            "items": {
+              "$ref": "#/components/schemas/FormComponentDTO"
+            }
+          },
+          "stateId": {
+            "type": "string",
+            "description": "The stateId that must be submitted along the form when posting it back."
+          }
+        },
+        "title": "FormStepObject",
+        "description": "The object containing a form step in the login flow."
+      },
+      "IBAN": {
+        "title": "IBAN",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "defaultValue": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "fieldType": {
+                "type": "string",
+                "enum": [
+                  "DATE",
+                  "EXPLANATION",
+                  "IBAN",
+                  "NUMBER",
+                  "PASSWORD",
+                  "RADIO",
+                  "SELECT",
+                  "TEXT",
+                  "TEXT_AREA"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "IBAN"
+          }
+        ]
+      },
+      "InitiateSepaPaymentRequestDTO": {
+        "type": "object",
+        "required": [
+          "creditorAccount",
+          "creditorName",
+          "endToEndIdentification",
+          "instructedAmount",
+          "remittanceInformationUnstructured"
+        ],
+        "properties": {
+          "creditorAccount": {
+            "$ref": "#/components/schemas/SepaAccountDTO"
+          },
+          "creditorName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 70
+          },
+          "debtorAccount": {
+            "$ref": "#/components/schemas/SepaAccountDTO"
+          },
+          "dynamicFields": {
+            "$ref": "#/components/schemas/DynamicFields"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "pattern": "[A-Za-z0-9-]{1,35}"
+          },
+          "instructedAmount": {
+            "$ref": "#/components/schemas/SepaAmountDTO"
+          },
+          "remittanceInformationUnstructured": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 140
+          }
+        },
+        "title": "InitiateSepaPaymentRequestDTO"
+      },
+      "InitiateSepaPaymentResponseDTO": {
+        "type": "object",
+        "required": [
+          "authorizationUrl"
+        ],
+        "properties": {
+          "authorizationUrl": {
+            "type": "string"
+          },
+          "paymentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "title": "InitiateSepaPaymentResponseDTO"
+      },
+      "JWEDetails": {
+        "type": "object",
+        "required": [
+          "algorithm",
+          "encryptionMethod",
+          "publicJSONWebKey"
+        ],
+        "properties": {
+          "algorithm": {
+            "type": "string",
+            "description": "JSON Web Encryption encryption algorithm to encrypt the Content Encryption Key (CEK), i.e. the 'alg' header of a JWE"
+          },
+          "encryptionMethod": {
+            "type": "string",
+            "description": "JSON Web Content Encryption Algorithm (CEK). i.e. the 'enc' header of a JWE"
+          },
+          "publicJSONWebKey": {
+            "type": "string",
+            "description": "JSON Web Key with which to encrypt credentials"
+          }
+        },
+        "title": "JWEDetails",
+        "description": "JSON Web Encryption configuration"
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string"
+          }
+        },
+        "title": "Link",
+        "description": "Link that can be used to perform an operation related to this object (HATEOAS)"
+      },
+      "LoginDTO": {
+        "type": "object",
+        "required": [
+          "loginType"
+        ],
+        "discriminator": {
+          "propertyName": "loginType"
+        },
+        "properties": {
+          "loginType": {
+            "type": "string",
+            "enum": [
+              "FORM",
+              "URL"
+            ]
+          }
+        },
+        "title": "LoginDTO",
+        "description": "A container object with the redirect-url needed for login."
+      },
+      "LoginFormResponse": {
+        "type": "object",
+        "required": [
+          "userSite",
+          "userSiteId"
+        ],
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "If not-null, the system has started an activity with this id."
+          },
+          "step": {
+            "$ref": "#/components/schemas/Step"
+          },
+          "userSite": {
+            "$ref": "#/components/schemas/UserSite"
+          },
+          "userSiteId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "title": "LoginFormResponse",
+        "description": "Contains the id for the user-site that is being created. To know exactly the status of the Login, call the get user-site status endpoint."
+      },
+      "LoginStep": {
+        "type": "object",
+        "required": [
+          "_links"
+        ],
+        "properties": {
+          "_links": {
+            "$ref": "#/components/schemas/LoginStepLinks"
+          },
+          "form": {
+            "$ref": "#/components/schemas/FormStepObject"
+          },
+          "redirect": {
+            "$ref": "#/components/schemas/RedirectStepObject"
+          },
+          "userSiteId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "When calling the /initiate-user-site endpoint, this property refers to a user site that does not exist yet. In that case it's a reserved identifier. In case the step isn't completed this identifier will expire and will not be used anywhere."
+          }
+        },
+        "title": "LoginStep",
+        "description": "The response when initiating the process to connect a user to a site. This object contains *either* a Form Step Object, *or* a Redirect Step Object."
+      },
+      "LoginStepLinks": {
+        "type": "object",
+        "required": [
+          "postLoginStep"
+        ],
+        "properties": {
+          "postLoginStep": {
+            "$ref": "#/components/schemas/Link"
+          }
+        },
+        "title": "LoginStepLinks",
+        "description": "Links related to the LoginStep object (HATEOAS)"
+      },
+      "MULTI": {
+        "title": "MULTI",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "childComponents": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FormComponentDTO"
+                }
+              },
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "containerType": {
+                "type": "string",
+                "enum": [
+                  "CHOICE",
+                  "FORM",
+                  "MULTI",
+                  "SECTION"
+                ]
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "MULTI"
+          }
+        ]
+      },
+      "NUMBER": {
+        "title": "NUMBER",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "defaultValue": {
+                "type": "number"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "fieldType": {
+                "type": "string",
+                "enum": [
+                  "DATE",
+                  "EXPLANATION",
+                  "IBAN",
+                  "NUMBER",
+                  "PASSWORD",
+                  "RADIO",
+                  "SELECT",
+                  "TEXT",
+                  "TEXT_AREA"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "max": {
+                "type": "number"
+              },
+              "min": {
+                "type": "number"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "stepSize": {
+                "type": "number"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "NUMBER"
+          }
+        ]
+      },
+      "Onboarded": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "boolean"
+          },
+          "redirectUrlIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "title": "Onboarded",
+        "description": "Describes whether the client is onboarded for this particular service on this site."
+      },
+      "PASSWORD": {
+        "title": "PASSWORD",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "fieldType": {
+                "type": "string",
+                "enum": [
+                  "DATE",
+                  "EXPLANATION",
+                  "IBAN",
+                  "NUMBER",
+                  "PASSWORD",
+                  "RADIO",
+                  "SELECT",
+                  "TEXT",
+                  "TEXT_AREA"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "length": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "maxLength": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "PASSWORD"
+          }
+        ]
+      },
+      "PIS": {
+        "type": "object",
+        "required": [
+          "hasFormSteps",
+          "hasRedirectSteps",
+          "onboarded"
+        ],
+        "properties": {
+          "hasFormSteps": {
+            "type": "boolean",
+            "description": "If the authorization process involves a form step this is true. (usually false, but true for scrapers, or more complicated banks."
+          },
+          "hasRedirectSteps": {
+            "type": "boolean",
+            "description": "If the authorization process involves a redirect this is true."
+          },
+          "onboarded": {
+            "$ref": "#/components/schemas/Onboarded"
+          },
+          "periodicSepa": {
+            "$ref": "#/components/schemas/SepaPeriodicPaymentDetailsDTO"
+          },
+          "scheduledSepa": {
+            "$ref": "#/components/schemas/SepaScheduledPaymentDetailsDTO"
+          },
+          "sepaSingle": {
+            "$ref": "#/components/schemas/SepaSingle"
+          },
+          "singleSepa": {
+            "$ref": "#/components/schemas/SepaSinglePaymentDetailsDTO"
+          },
+          "ukDomesticPeriodic": {
+            "$ref": "#/components/schemas/UkDomesticPeriodicPaymentDetailsDTO"
+          },
+          "ukDomesticScheduled": {
+            "$ref": "#/components/schemas/UkDomesticScheduledPaymentDetailsDTO"
+          },
+          "ukDomesticSingle": {
+            "$ref": "#/components/schemas/UkDomesticSinglePaymentDetailsDTO"
+          }
+        },
+        "title": "PIS",
+        "description": "PIS, Payment Initiation Service."
+      },
+      "PaymentDTO": {
+        "type": "object",
+        "properties": {
+          "externalPaymentId": {
+            "type": "string",
+            "description": "Identifier of the payment at the bank.  Non-null if paymenStatus <> INITIATED."
+          },
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier of the payment."
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "ACCEPTED",
+              "COMPLETED",
+              "INITIATED",
+              "REJECTED"
+            ]
+          }
+        },
+        "title": "PaymentDTO"
+      },
+      "RADIO": {
+        "title": "RADIO",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "defaultValue": {
+                "$ref": "#/components/schemas/SelectOptionValue"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "fieldType": {
+                "type": "string",
+                "enum": [
+                  "DATE",
+                  "EXPLANATION",
+                  "IBAN",
+                  "NUMBER",
+                  "PASSWORD",
+                  "RADIO",
+                  "SELECT",
+                  "TEXT",
+                  "TEXT_AREA"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "selectOptionValues": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SelectOptionValueDTO"
+                }
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "RADIO"
+          }
+        ]
+      },
+      "RedirectStepObject": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The URL the user should be redirected to."
+          }
+        },
+        "title": "RedirectStepObject",
+        "description": "The object containing a redirect URL step in the login flow."
+      },
+      "RefreshResponseDTO": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "If non-null then a data fetch has started that involves 1 or more user sites.  If null then no data fetch could be started."
+          }
+        },
+        "title": "RefreshResponseDTO"
+      },
+      "RemittanceInformationStructuredDynamicFieldDTO": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "title": "RemittanceInformationStructuredDynamicFieldDTO",
+        "description": "Describes whether the site has the option to submit structured remittance information when initiating a payment."
+      },
+      "SECTION": {
+        "title": "SECTION",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "childComponents": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FormComponentDTO"
+                }
+              },
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "containerType": {
+                "type": "string",
+                "enum": [
+                  "CHOICE",
+                  "FORM",
+                  "MULTI",
+                  "SECTION"
+                ]
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "SECTION"
+          }
+        ]
+      },
+      "SELECT": {
+        "title": "SELECT",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "defaultValue": {
+                "$ref": "#/components/schemas/SelectOptionValue"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "fieldType": {
+                "type": "string",
+                "enum": [
+                  "DATE",
+                  "EXPLANATION",
+                  "IBAN",
+                  "NUMBER",
+                  "PASSWORD",
+                  "RADIO",
+                  "SELECT",
+                  "TEXT",
+                  "TEXT_AREA"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "length": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "maxLength": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "selectOptionValues": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SelectOptionValueDTO"
+                }
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "SELECT"
+          }
+        ]
+      },
+      "SelectOptionValue": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "title": "SelectOptionValue"
+      },
+      "SelectOptionValueDTO": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "title": "SelectOptionValueDTO"
+      },
+      "SepaAccountDTO": {
+        "type": "object",
+        "required": [
+          "iban"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "enum": [
+              "AED",
+              "AFN",
+              "ALL",
+              "AMD",
+              "ANG",
+              "AOA",
+              "ARS",
+              "AUD",
+              "AWG",
+              "AZN",
+              "BAM",
+              "BBD",
+              "BDT",
+              "BGN",
+              "BHD",
+              "BIF",
+              "BMD",
+              "BND",
+              "BOB",
+              "BOV",
+              "BRL",
+              "BSD",
+              "BTN",
+              "BWP",
+              "BYN",
+              "BZD",
+              "CAD",
+              "CDF",
+              "CHE",
+              "CHF",
+              "CHW",
+              "CLF",
+              "CLP",
+              "CNY",
+              "COP",
+              "COU",
+              "CRC",
+              "CUC",
+              "CUP",
+              "CVE",
+              "CZK",
+              "DJF",
+              "DKK",
+              "DOP",
+              "DZD",
+              "EGP",
+              "ERN",
+              "ETB",
+              "EUR",
+              "FJD",
+              "FKP",
+              "GBP",
+              "GEL",
+              "GHS",
+              "GIP",
+              "GMD",
+              "GNF",
+              "GTQ",
+              "GYD",
+              "HKD",
+              "HNL",
+              "HRK",
+              "HTG",
+              "HUF",
+              "IDR",
+              "ILS",
+              "INR",
+              "IQD",
+              "IRR",
+              "ISK",
+              "JMD",
+              "JOD",
+              "JPY",
+              "KES",
+              "KGS",
+              "KHR",
+              "KMF",
+              "KPW",
+              "KRW",
+              "KWD",
+              "KYD",
+              "KZT",
+              "LAK",
+              "LBP",
+              "LKR",
+              "LRD",
+              "LSL",
+              "LYD",
+              "MAD",
+              "MDL",
+              "MGA",
+              "MKD",
+              "MMK",
+              "MNT",
+              "MOP",
+              "MRO",
+              "MUR",
+              "MVR",
+              "MWK",
+              "MXN",
+              "MXV",
+              "MYR",
+              "MZN",
+              "NAD",
+              "NGN",
+              "NIO",
+              "NOK",
+              "NPR",
+              "NZD",
+              "OMR",
+              "PAB",
+              "PEN",
+              "PGK",
+              "PHP",
+              "PKR",
+              "PLN",
+              "PYG",
+              "QAR",
+              "RON",
+              "RSD",
+              "RUB",
+              "RWF",
+              "SAR",
+              "SBD",
+              "SCR",
+              "SDG",
+              "SEK",
+              "SGD",
+              "SHP",
+              "SLL",
+              "SOS",
+              "SRD",
+              "SSP",
+              "STD",
+              "SVC",
+              "SYP",
+              "SZL",
+              "THB",
+              "TJS",
+              "TMT",
+              "TND",
+              "TOP",
+              "TRY",
+              "TTD",
+              "TWD",
+              "TZS",
+              "UAH",
+              "UGX",
+              "USD",
+              "USN",
+              "UYI",
+              "UYU",
+              "UZS",
+              "VEF",
+              "VND",
+              "VUV",
+              "WST",
+              "XAF",
+              "XCD",
+              "XDR",
+              "XOF",
+              "XXX",
+              "YER",
+              "ZAR",
+              "ZMW",
+              "ZWL"
+            ]
+          },
+          "iban": {
+            "type": "string"
+          }
+        },
+        "title": "SepaAccountDTO"
+      },
+      "SepaAmountDTO": {
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number"
+          }
+        },
+        "title": "SepaAmountDTO"
+      },
+      "SepaPeriodicPaymentDetailsDTO": {
+        "type": "object",
+        "required": [
+          "supported"
+        ],
+        "properties": {
+          "dynamicFields": {
+            "$ref": "#/components/schemas/DynamicFieldsDTO"
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "This field is used to show if the bank supports this payment type."
+          },
+          "supportedFrequencies": {
+            "type": "array",
+            "description": "The supported frequencies by the site when initiating a periodic payment.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "title": "SepaPeriodicPaymentDetailsDTO",
+        "description": "Describes whether initiating Periodic SEPA payments is supported for this site."
+      },
+      "SepaScheduledPaymentDetailsDTO": {
+        "type": "object",
+        "required": [
+          "supported"
+        ],
+        "properties": {
+          "dynamicFields": {
+            "$ref": "#/components/schemas/DynamicFieldsDTO"
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "This field is used to show if the bank supports this payment type."
+          }
+        },
+        "title": "SepaScheduledPaymentDetailsDTO",
+        "description": "Describes whether initiating Scheduled SEPA payments is supported for this site."
+      },
+      "SepaSingle": {
+        "type": "object",
+        "properties": {
+          "debtorAccount": {
+            "$ref": "#/components/schemas/Field"
+          },
+          "executionDate": {
+            "$ref": "#/components/schemas/Field"
+          },
+          "executionPriority": {
+            "$ref": "#/components/schemas/Field"
+          }
+        },
+        "title": "SepaSingle",
+        "description": "Describes which features/properties/fields are available in the payment initiation for this bank. Presence of a field means it's an extra features. If it also has the 'required' flag, it is required for this bank.This field is deprecated, use the SepaSinglePaymentDetails object field for more in depth payment information."
+      },
+      "SepaSinglePaymentDetailsDTO": {
+        "type": "object",
+        "required": [
+          "supported"
+        ],
+        "properties": {
+          "dynamicFields": {
+            "$ref": "#/components/schemas/DynamicFieldsDTO"
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "This field is used to show if the bank supports this payment type."
+          }
+        },
+        "title": "SepaSinglePaymentDetailsDTO",
+        "description": "Describes whether initiating Single SEPA payments is supported for this site."
+      },
+      "Services": {
+        "type": "object",
+        "properties": {
+          "ais": {
+            "$ref": "#/components/schemas/AIS"
+          },
+          "pis": {
+            "$ref": "#/components/schemas/PIS"
+          }
+        },
+        "title": "Services",
+        "description": "The services of the site. All are nullable, however, at least 1 of them is not-null"
+      },
+      "SiteConnectionHealthStatus": {
+        "type": "object",
+        "required": [
+          "healthStatus",
+          "manualMaintenanceStatus",
+          "successRatioForCreateOrUpdate",
+          "successRatioRefresh"
+        ],
+        "properties": {
+          "healthStatus": {
+            "type": "string",
+            "description": "The total calculated health of this site.",
+            "enum": [
+              "DOWN",
+              "UP"
+            ]
+          },
+          "manualMaintenanceFrom": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The start of manual maintenance for this site, in UTC."
+          },
+          "manualMaintenanceStatus": {
+            "type": "string",
+            "description": "The current manual maintenance status of the site.",
+            "enum": [
+              "MAINTENANCE",
+              "NONE",
+              "SCHEDULED"
+            ]
+          },
+          "manualMaintenanceTo": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The end of manual maintenance for this site, in UTC."
+          },
+          "successRatioForCreateOrUpdate": {
+            "type": "string",
+            "description": "The success ratio (1.00 - 0.00) of an add bank / update operation. It might also be \"not available\" due to a lack of load on this site."
+          },
+          "successRatioRefresh": {
+            "type": "string",
+            "description": "The success ratio (1.00 - 0.00) of a refresh operation. It might also be \"not available\" due to a lack of load on this site."
+          }
+        },
+        "title": "SiteConnectionHealthStatus",
+        "description": "An object containing information about the health of the site"
+      },
+      "SiteDTO": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "supportedAccountTypes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": 123
+          },
+          "name": {
+            "type": "string",
+            "example": "ING Bank"
+          },
+          "supportedAccountTypes": {
+            "type": "array",
+            "example": "CURRENT_ACCOUNT,SAVINGS_ACCOUNT,CREDIT_CARD",
+            "description": "The account types this site supports",
+            "items": {
+              "type": "string",
+              "enum": [
+                "CREDIT_CARD",
+                "CURRENT_ACCOUNT",
+                "INVESTMENT",
+                "PENSION",
+                "PREPAID_ACCOUNT",
+                "SAVINGS_ACCOUNT"
+              ]
+            }
+          }
+        },
+        "title": "SiteDTO",
+        "description": "This object will be fetched when you add the request param fetchObject=site if it is supported by the endpoint"
+      },
+      "Step": {
+        "type": "object",
+        "properties": {
+          "form": {
+            "$ref": "#/components/schemas/FormStepObject"
+          },
+          "redirect": {
+            "$ref": "#/components/schemas/RedirectStepObject"
+          }
+        },
+        "title": "Step",
+        "description": "Contains a step that the user needs to complete in order to successfully connect a user site."
+      },
+      "SubmitPaymentRequestDTO": {
+        "type": "object",
+        "required": [
+          "redirectUrl"
+        ],
+        "properties": {
+          "providerState": {
+            "type": "string"
+          },
+          "redirectUrl": {
+            "type": "string"
+          }
+        },
+        "title": "SubmitPaymentRequestDTO"
+      },
+      "SymmetricKeyEncryptionDetails": {
+        "type": "object",
+        "required": [
+          "cipher",
+          "publicKey"
+        ],
+        "properties": {
+          "cipher": {
+            "type": "string",
+            "description": "Algorithm/Mode/Padding to use with generated symmetric key encryption"
+          },
+          "publicKey": {
+            "type": "string",
+            "description": "Public key with which to encrypt symmetric encryption key and initialization vector"
+          }
+        },
+        "title": "SymmetricKeyEncryptionDetails",
+        "description": "Encryption details and public key"
+      },
+      "TEXT": {
+        "title": "TEXT",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "fieldType": {
+                "type": "string",
+                "enum": [
+                  "DATE",
+                  "EXPLANATION",
+                  "IBAN",
+                  "NUMBER",
+                  "PASSWORD",
+                  "RADIO",
+                  "SELECT",
+                  "TEXT",
+                  "TEXT_AREA"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "length": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "maxLength": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "TEXT"
+          }
+        ]
+      },
+      "TEXT_AREA": {
+        "title": "TEXT_AREA",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FormComponentDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "componentType": {
+                "type": "string",
+                "enum": [
+                  "CONTAINER",
+                  "FIELD"
+                ]
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "fieldType": {
+                "type": "string",
+                "enum": [
+                  "DATE",
+                  "EXPLANATION",
+                  "IBAN",
+                  "NUMBER",
+                  "PASSWORD",
+                  "RADIO",
+                  "SELECT",
+                  "TEXT",
+                  "TEXT_AREA"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "maxLength": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "rows": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "title": "TEXT_AREA"
+          }
+        ]
+      },
+      "URL": {
+        "title": "URL",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LoginDTO"
+          },
+          {
+            "type": "object",
+            "required": [
+              "loginType"
+            ],
+            "properties": {
+              "loginType": {
+                "type": "string",
+                "enum": [
+                  "FORM",
+                  "URL"
+                ]
+              },
+              "redirectUrl": {
+                "type": "string"
+              }
+            },
+            "title": "URL",
+            "description": "A container object with the redirect-url needed for login."
+          }
+        ],
+        "description": "A container object with the redirect-url needed for login."
+      },
+      "UkDomesticPeriodicPaymentDetailsDTO": {
+        "type": "object",
+        "required": [
+          "supported"
+        ],
+        "properties": {
+          "dynamicFields": {
+            "$ref": "#/components/schemas/DynamicFieldsDTO"
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "This field is used to show if the bank supports this payment type."
+          },
+          "supportedFrequencies": {
+            "type": "array",
+            "description": "The supported frequencies by the site when initiating a periodic payment.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "title": "UkDomesticPeriodicPaymentDetailsDTO",
+        "description": "Describes whether initiating Periodic UK Domestic payments is supported for this site."
+      },
+      "UkDomesticScheduledPaymentDetailsDTO": {
+        "type": "object",
+        "required": [
+          "supported"
+        ],
+        "properties": {
+          "dynamicFields": {
+            "$ref": "#/components/schemas/DynamicFieldsDTO"
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "This field is used to show if the bank supports this payment type."
+          }
+        },
+        "title": "UkDomesticScheduledPaymentDetailsDTO",
+        "description": "Describes whether initiating Scheduled UK Domestic payments is supported for this site."
+      },
+      "UkDomesticSinglePaymentDetailsDTO": {
+        "type": "object",
+        "required": [
+          "supported"
+        ],
+        "properties": {
+          "dynamicFields": {
+            "$ref": "#/components/schemas/DynamicFieldsDTO"
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "This field is used to show if the bank supports this payment type."
+          }
+        },
+        "title": "UkDomesticSinglePaymentDetailsDTO",
+        "description": "Describes whether initiating Single UK Domestic payments is supported for this site."
+      },
+      "UserSite": {
+        "type": "object",
+        "required": [
+          "connectionStatus",
+          "id",
+          "lastDataFetchTime"
+        ],
+        "properties": {
+          "connectionStatus": {
+            "type": "string",
+            "example": "CONNECTED",
+            "description": "The connection status. This indicates whether we can fetch new data for this user site.",
+            "enum": [
+              "CONNECTED",
+              "DISCONNECTED",
+              "STEP_NEEDED"
+            ]
+          },
+          "consentValidFrom": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Consent was given by the PSU at this time."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lastDataFetchFailureReason": {
+            "type": "string",
+            "example": "CONSENT_EXPIRED",
+            "description": "If the last refresh fails, this property indicates why. This is only notnull in case connectedStatus==DISCONNECTED.",
+            "enum": [
+              "ACTION_NEEDED_AT_SITE",
+              "AUTHENTICATION_FAILED",
+              "CONSENT_EXPIRED",
+              "TECHNICAL_ERROR"
+            ]
+          },
+          "lastDataFetchTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last time user-site was successfully refreshed"
+          },
+          "metaData": {
+            "type": "object",
+            "description": "Contains meta data of the user-site, such as for some banks the region the user selected when adding the bank",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "site": {
+            "$ref": "#/components/schemas/SiteDTO"
+          }
+        },
+        "title": "UserSite",
+        "description": "The connection between the user and a site."
       },
       "AccountDTO": {
         "type": "object",
@@ -1663,6 +4768,13 @@
             "type": "number",
             "example": 240.45,
             "description": "The amount."
+          },
+          "balances": {
+            "type": "array",
+            "description": "A list of all balance details received from the bank in the last refresh.",
+            "items": {
+              "$ref": "#/components/schemas/BalanceDTO"
+            }
           },
           "bankSpecific": {
             "type": "object",
@@ -1840,11 +4952,11 @@
               "XCD",
               "XDR",
               "XOF",
+              "XXX",
               "YER",
               "ZAR",
               "ZMW",
-              "ZWL",
-              "XXX"
+              "ZWL"
             ]
           },
           "currentAccount": {
@@ -1865,6 +4977,11 @@
             "type": "number",
             "example": 0.04,
             "description": "The interest rate for the balance of this account. For savings and current accounts this relates to the interest given to the user. For credit card accounts it's related to the interest paid by the user."
+          },
+          "lastDataFetchTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last time account was successfully refreshed."
           },
           "linkedAccount": {
             "type": "string",
@@ -1888,9 +5005,9 @@
             "example": "ENABLED",
             "description": "Status of the account. Defaults to ENABLED.",
             "enum": [
-              "ENABLED",
+              "BLOCKED",
               "DELETED",
-              "BLOCKED"
+              "ENABLED"
             ]
           },
           "type": {
@@ -1898,12 +5015,12 @@
             "example": "CURRENT_ACCOUNT",
             "description": "The account type.",
             "enum": [
-              "CURRENT_ACCOUNT",
               "CREDIT_CARD",
-              "SAVINGS_ACCOUNT",
-              "PREPAID_ACCOUNT",
+              "CURRENT_ACCOUNT",
+              "INVESTMENT",
               "PENSION",
-              "INVESTMENT"
+              "PREPAID_ACCOUNT",
+              "SAVINGS_ACCOUNT"
             ]
           },
           "usage": {
@@ -1911,8 +5028,8 @@
             "example": "PRIV",
             "description": "Usage type of the account",
             "enum": [
-              "PRIVATE",
-              "CORPORATE"
+              "CORPORATE",
+              "PRIVATE"
             ]
           },
           "userSite": {
@@ -1950,7 +5067,38 @@
             "description": "The sort code and account number. UK specific."
           }
         },
-        "title": "AccountReferencesDTO"
+        "title": "AccountReferencesDTO",
+        "description": "An account reference. If this object is present, at least one of the sub properties is given"
+      },
+      "BalanceDTO": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "The amount of the balance."
+          },
+          "currency": {
+            "type": "string",
+            "description": "The currency of the balance."
+          },
+          "type": {
+            "type": "string",
+            "description": "The balance types are formatted according to the ISO 20022 standard.",
+            "enum": [
+              "AUTHORISED",
+              "AVAILABLE",
+              "CLOSING_BOOKED",
+              "EXPECTED",
+              "FORWARD_AVAILABLE",
+              "INTERIM_AVAILABLE",
+              "INTERIM_BOOKED",
+              "NON_INVOICED",
+              "OPENING_BOOKED"
+            ]
+          }
+        },
+        "title": "BalanceDTO",
+        "description": "Contains information of one of the various types of balances available for the account."
       },
       "CreditCardAccountDTO": {
         "type": "object",
@@ -1971,7 +5119,8 @@
             "description": "The account to which the card is linked. For credit cards this will always be a CURRENT_ACCOUNT. Refers to the externalId of the current account"
           }
         },
-        "title": "CreditCardAccountDTO"
+        "title": "CreditCardAccountDTO",
+        "description": "Contains information specific to credit card accounts."
       },
       "CreditorDTO": {
         "type": "object",
@@ -1985,7 +5134,8 @@
             "description": "The name."
           }
         },
-        "title": "CreditorDTO"
+        "title": "CreditorDTO",
+        "description": "The creditor of the transaction."
       },
       "CurrentAccountDTO": {
         "type": "object",
@@ -2001,17 +5151,8 @@
             "description": "Credit limit"
           }
         },
-        "title": "CurrentAccountDTO"
-      },
-      "CycleDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "title": "CycleDTO"
+        "title": "CurrentAccountDTO",
+        "description": "Contains information specific to current accounts."
       },
       "DebtorDTO": {
         "type": "object",
@@ -2025,44 +5166,23 @@
             "description": "The name."
           }
         },
-        "title": "DebtorDTO"
+        "title": "DebtorDTO",
+        "description": "The debtor of the transaction."
       },
       "EnrichmentDTO": {
         "type": "object",
         "properties": {
           "category": {
             "type": "string",
-            "description": "The category",
-            "enum": [
-              "General",
-              "Housing",
-              "Personal care",
-              "Groceries",
-              "Eating out",
-              "Shopping",
-              "Travel",
-              "Transport",
-              "Bills",
-              "Transfers",
-              "Cash",
-              "Leisure",
-              "Internal",
-              "Income",
-              "Charity",
-              "Coffee",
-              "Drinks",
-              "Education",
-              "Expenses",
-              "Investments",
-              "Lunch"
-            ]
+            "description": "The category"
           },
           "cycle": {
-            "$ref": "#/components/schemas/CycleDTO"
+            "$ref": "#/components/schemas/TransactionCycleDTO"
           },
           "labels": {
             "type": "array",
             "description": "Extra labels detected by the model, for example 'salary' or 'refund'.",
+            "uniqueItems": true,
             "items": {
               "type": "string"
             }
@@ -2071,7 +5191,8 @@
             "$ref": "#/components/schemas/MerchantDTO"
           }
         },
-        "title": "EnrichmentDTO"
+        "title": "EnrichmentDTO",
+        "description": "Fields provided by Yolt's data enrichment pipeline. This field will appear for clients that have data enrichment enabled on their account."
       },
       "ExchangeRateDTO": {
         "type": "object",
@@ -2242,11 +5363,11 @@
               "XCD",
               "XDR",
               "XOF",
+              "XXX",
               "YER",
               "ZAR",
               "ZMW",
-              "ZWL",
-              "XXX"
+              "ZWL"
             ]
           },
           "currencyTo": {
@@ -2415,11 +5536,11 @@
               "XCD",
               "XDR",
               "XOF",
+              "XXX",
               "YER",
               "ZAR",
               "ZMW",
-              "ZWL",
-              "XXX"
+              "ZWL"
             ]
           },
           "rate": {
@@ -2428,7 +5549,8 @@
             "description": "The conversion rate of currencyFrom -> currencyTo."
           }
         },
-        "title": "ExchangeRateDTO"
+        "title": "ExchangeRateDTO",
+        "description": "The exchange rate of the transaction."
       },
       "MerchantDTO": {
         "type": "object",
@@ -2438,7 +5560,8 @@
             "description": "Name of the merchant."
           }
         },
-        "title": "MerchantDTO"
+        "title": "MerchantDTO",
+        "description": "The merchant"
       },
       "OriginalAmountDTO": {
         "type": "object",
@@ -2618,15 +5741,16 @@
               "XCD",
               "XDR",
               "XOF",
+              "XXX",
               "YER",
               "ZAR",
               "ZMW",
-              "ZWL",
-              "XXX"
+              "ZWL"
             ]
           }
         },
-        "title": "OriginalAmountDTO"
+        "title": "OriginalAmountDTO",
+        "description": "The original amount of the transaction. Provided when a payment was initiated in a different currency than the account currency"
       },
       "SavingsAccountDTO": {
         "type": "object",
@@ -2642,7 +5766,58 @@
             "description": "Some banks provide 'savings goals' functionality. These 'pots' will be modeled as separate savings accounts.This savings account is a 'child' of another account. The other main account is referred to by this property. Please note that these are external references provided by the bank, so it points to another account.externalId"
           }
         },
-        "title": "SavingsAccountDTO"
+        "title": "SavingsAccountDTO",
+        "description": "Contains information specific to savings accounts."
+      },
+      "TransactionCycleDTO": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": -22.33,
+            "description": "The amount of the cycle."
+          },
+          "counterparty": {
+            "type": "string",
+            "description": "The counterpart of transaction that is part of the cycle."
+          },
+          "currency": {
+            "type": "string",
+            "example": "EUR",
+            "description": "The currency of the cycle."
+          },
+          "cycleType": {
+            "type": "string",
+            "description": "The type of cycle (i.e. debit or credit)",
+            "enum": [
+              "CREDITS",
+              "DEBITS"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "A label describing the cycle."
+          },
+          "period": {
+            "type": "string",
+            "description": "The recurrence period of the cycle."
+          },
+          "predictedOccurrences": {
+            "type": "array",
+            "example": "2030-12-31",
+            "description": "Set of dates on which the transaction in this cycle might occur.",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "subscription": {
+            "type": "boolean",
+            "description": "Indication of whether or not this cycle is a subscription."
+          }
+        },
+        "title": "TransactionCycleDTO",
+        "description": "The cycle to which transaction belongs. This refers to a recurring transaction."
       },
       "TransactionDTO": {
         "type": "object",
@@ -2679,6 +5854,11 @@
             "type": "string",
             "example": "PMNT-RCDT-ESCT",
             "description": "Bank transaction code"
+          },
+          "bookingDate": {
+            "type": "string",
+            "format": "date",
+            "description": "The Date when an entry is posted to an account on the ASPSPs books."
           },
           "creditor": {
             "$ref": "#/components/schemas/CreditorDTO"
@@ -2849,11 +6029,11 @@
               "XCD",
               "XDR",
               "XOF",
+              "XXX",
               "YER",
               "ZAR",
               "ZMW",
-              "ZWL",
-              "XXX"
+              "ZWL"
             ]
           },
           "date": {
@@ -2884,7 +6064,7 @@
           "externalId": {
             "type": "string",
             "example": "14H8IY710471984729847",
-            "description": "The identifier of the transaction at the bank."
+            "description": "The identifier of the transaction at the bank.  This field is not guaranteed to be present.  It is also not guaranteed to be unique."
           },
           "id": {
             "type": "string",
@@ -2909,9 +6089,9 @@
             "example": "BOOKED",
             "description": "Status of the transaction.",
             "enum": [
-              "PENDING",
               "BOOKED",
-              "HOLD"
+              "HOLD",
+              "PENDING"
             ]
           },
           "timestamp": {
@@ -2919,6 +6099,11 @@
             "format": "date-time",
             "example": "2019-11-26T12:00:00.00000+02:00",
             "description": "The timestamp of the transaction with the time-offset included."
+          },
+          "valueDate": {
+            "type": "string",
+            "format": "date",
+            "description": "The Date at which assets become available to the account owner in case of a credit."
           }
         },
         "title": "TransactionDTO"
@@ -2960,1653 +6145,8 @@
             "description": "The identifier of the user site."
           }
         },
-        "title": "UserSiteDTO"
-      },
-      "AIS": {
-        "type": "object",
-        "required": [
-          "hasFormSteps",
-          "hasRedirectSteps",
-          "onboarded"
-        ],
-        "properties": {
-          "hasFormSteps": {
-            "type": "boolean",
-            "description": "If the authorization process involves a form step this is true. (usually false, but true for scrapers, or more complicated banks."
-          },
-          "hasRedirectSteps": {
-            "type": "boolean",
-            "description": "If the authorization process involves a redirect this is true."
-          },
-          "onboarded": {
-            "$ref": "#/components/schemas/Onboarded"
-          }
-        },
-        "title": "AIS"
-      },
-      "CHOICE": {
-        "title": "CHOICE",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "childComponents": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/FormComponentDTO"
-                }
-              },
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "containerType": {
-                "type": "string",
-                "enum": [
-                  "CHOICE",
-                  "MULTI",
-                  "FORM",
-                  "SECTION"
-                ]
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "id": {
-                "type": "string"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "CHOICE"
-          }
-        ]
-      },
-      "CipherDetails": {
-        "type": "object",
-        "required": [
-          "cipher",
-          "publicKey"
-        ],
-        "properties": {
-          "cipher": {
-            "type": "string",
-            "description": "Algorithm/Mode/Padding to use with asymmetric per field encryption"
-          },
-          "publicKey": {
-            "type": "string",
-            "description": "Public key with which to encrypt credentials"
-          }
-        },
-        "title": "CipherDetails",
-        "description": "Cipher configuration and public key used for encryption"
-      },
-      "ClientSiteEntity": {
-        "type": "object",
-        "required": [
-          "connectionType",
-          "health",
-          "iconLink",
-          "noLongerSupported"
-        ],
-        "properties": {
-          "availableInCountries": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "GB",
-                "NL",
-                "AU",
-                "ES",
-                "AT",
-                "FR",
-                "DE",
-                "IT",
-                "CZ",
-                "RO",
-                "PL",
-                "LU",
-                "TH",
-                "BE",
-                "XF",
-                "FM"
-              ]
-            }
-          },
-          "connectionType": {
-            "type": "string",
-            "description": "Indicates whether this is a direct connection or through a scraper.",
-            "enum": [
-              "SCRAPER",
-              "DIRECT_CONNECTION"
-            ]
-          },
-          "enabled": {
-            "type": "boolean",
-            "description": "A flag which enables or disables the site, and it is controlled by the client."
-          },
-          "groupingBy": {
-            "type": "string"
-          },
-          "health": {
-            "$ref": "#/components/schemas/SiteConnectionHealthStatus"
-          },
-          "iconLink": {
-            "type": "string",
-            "example": "/content/images/sites/icons/96da1236-1bf7-45e0-b87d-1fd8e264255b.png"
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "loginType": {
-            "type": "string",
-            "enum": [
-              "FORM",
-              "URL"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "noLongerSupported": {
-            "type": "boolean",
-            "description": "If set to true, this site is no longer supported."
-          },
-          "services": {
-            "$ref": "#/components/schemas/Services"
-          },
-          "supportedAccountTypes": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "CURRENT_ACCOUNT",
-                "CREDIT_CARD",
-                "SAVINGS_ACCOUNT",
-                "PREPAID_ACCOUNT",
-                "PENSION",
-                "INVESTMENT"
-              ]
-            }
-          },
-          "tags": {
-            "type": "array",
-            "description": "The list of tags added to the site. This can be used to retrieve a specific site list and the tags are controlled by the client.",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "title": "ClientSiteEntity",
-        "description": "A site can be a bank or a creditcard company, etc."
-      },
-      "DATE": {
-        "title": "DATE",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "dateFormat": {
-                "type": "string"
-              },
-              "defaultValue": {
-                "type": "string",
-                "format": "date"
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "fieldType": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "PASSWORD",
-                  "SELECT",
-                  "EXPLANATION",
-                  "DATE",
-                  "NUMBER",
-                  "IBAN",
-                  "RADIO",
-                  "TEXT_AREA"
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "maxDate": {
-                "type": "string",
-                "format": "date"
-              },
-              "minDate": {
-                "type": "string",
-                "format": "date"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "DATE"
-          }
-        ]
-      },
-      "EXPLANATION": {
-        "title": "EXPLANATION",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "explanation": {
-                "type": "string"
-              },
-              "fieldType": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "PASSWORD",
-                  "SELECT",
-                  "EXPLANATION",
-                  "DATE",
-                  "NUMBER",
-                  "IBAN",
-                  "RADIO",
-                  "TEXT_AREA"
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "EXPLANATION",
-            "description": "Form field with a descriptive message"
-          }
-        ],
-        "description": "Form field with a descriptive message"
-      },
-      "EncryptionDetails": {
-        "type": "object",
-        "required": [
-          "type"
-        ],
-        "properties": {
-          "cipherDetails": {
-            "$ref": "#/components/schemas/CipherDetails"
-          },
-          "jweDetails": {
-            "$ref": "#/components/schemas/JWEDetails"
-          },
-          "symmetricEncryptionWithRSAKeyExchangeDetails": {
-            "$ref": "#/components/schemas/SymmetricKeyEncryptionDetails"
-          },
-          "type": {
-            "type": "string",
-            "description": "Encryption type; use this to switch between alternative implementations",
-            "enum": [
-              "CIPHER",
-              "JWE",
-              "SYMMETRIC_ENCRYPTION_WITH_RSA_KEY_EXCHANGE",
-              "NONE"
-            ]
-          }
-        },
-        "title": "EncryptionDetails",
-        "description": "Configuration details describing the encryption algorithm."
-      },
-      "FORM": {
-        "title": "FORM",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/LoginDTO"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "filledInFormValues": {
-                "type": "array",
-                "description": "The list of filled-in form values.",
-                "items": {
-                  "$ref": "#/components/schemas/FilledInFormValue"
-                }
-              },
-              "siteId": {
-                "type": "string",
-                "format": "uuid",
-                "description": "The site-id this form belongs to."
-              },
-              "stateId": {
-                "type": "string",
-                "description": "The state-id that is used to determine which process to relate this form login to. Think of it like a session."
-              }
-            },
-            "title": "FORM",
-            "description": "A container object with the filled-in form values needed for login."
-          }
-        ],
-        "description": "A container object with the filled-in form values needed for login."
-      },
-      "Field": {
-        "type": "object",
-        "properties": {
-          "required": {
-            "type": "boolean"
-          }
-        },
-        "title": "Field"
-      },
-      "FilledInFormValue": {
-        "type": "object",
-        "properties": {
-          "fieldId": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "title": "FilledInFormValue",
-        "description": "Contains the unique field identifier and its filled-in value."
-      },
-      "FormComponentDTO": {
-        "type": "object",
-        "required": [
-          "type"
-        ],
-        "discriminator": {
-          "propertyName": "type"
-        },
-        "properties": {
-          "componentType": {
-            "type": "string",
-            "enum": [
-              "CONTAINER",
-              "FIELD"
-            ]
-          },
-          "displayName": {
-            "type": "string"
-          },
-          "optional": {
-            "type": "boolean"
-          },
-          "type": {
-            "type": "string"
-          }
-        },
-        "title": "FormComponentDTO",
-        "description": "The type of form component "
-      },
-      "FormStepObject": {
-        "type": "object",
-        "required": [
-          "encryption",
-          "formComponents",
-          "stateId"
-        ],
-        "properties": {
-          "encryption": {
-            "$ref": "#/components/schemas/EncryptionDetails"
-          },
-          "explanationField": {
-            "$ref": "#/components/schemas/EXPLANATION"
-          },
-          "formComponents": {
-            "type": "array",
-            "description": "Array with form components",
-            "items": {
-              "$ref": "#/components/schemas/FormComponentDTO"
-            }
-          },
-          "stateId": {
-            "type": "string",
-            "description": "The stateId that must be submitted along the form when posting it back."
-          }
-        },
-        "title": "FormStepObject",
-        "description": "The object containing a form step in the login flow."
-      },
-      "IBAN": {
-        "title": "IBAN",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "defaultValue": {
-                "type": "string"
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "fieldType": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "PASSWORD",
-                  "SELECT",
-                  "EXPLANATION",
-                  "DATE",
-                  "NUMBER",
-                  "IBAN",
-                  "RADIO",
-                  "TEXT_AREA"
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "IBAN"
-          }
-        ]
-      },
-      "InitiateSepaPaymentRequestDTO": {
-        "type": "object",
-        "properties": {
-          "creditorAccount": {
-            "$ref": "#/components/schemas/SepaAccountDTO"
-          },
-          "creditorName": {
-            "type": "string"
-          },
-          "endToEndIdentification": {
-            "type": "string"
-          },
-          "instructedAmount": {
-            "$ref": "#/components/schemas/SepaAmountDTO"
-          },
-          "remittanceInformationUnstructured": {
-            "type": "string"
-          },
-          "debtorAccount": {
-            "$ref": "#/components/schemas/SepaAccountDTO"
-          }
-        },
-        "title": "InitiateSepaPaymentRequestDTO"
-      },
-      "InitiateSepaPaymentResponseDTO": {
-        "type": "object",
-        "properties": {
-          "authorizationUrl": {
-            "type": "string"
-          },
-          "paymentId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "title": "InitiateSepaPaymentResponseDTO"
-      },
-      "JWEDetails": {
-        "type": "object",
-        "required": [
-          "algorithm",
-          "encryptionMethod",
-          "publicJSONWebKey"
-        ],
-        "properties": {
-          "algorithm": {
-            "type": "string",
-            "description": "JSON Web Encryption encryption algorithm to encrypt the Content Encryption Key (CEK), i.e. the 'alg' header of a JWE"
-          },
-          "encryptionMethod": {
-            "type": "string",
-            "description": "JSON Web Content Encryption Algorithm (CEK). i.e. the 'enc' header of a JWE"
-          },
-          "publicJSONWebKey": {
-            "type": "string",
-            "description": "JSON Web Key with which to encrypt credentials"
-          }
-        },
-        "title": "JWEDetails",
-        "description": "JSON Web Encryption configuration"
-      },
-      "Link": {
-        "type": "object",
-        "properties": {
-          "href": {
-            "type": "string"
-          }
-        },
-        "title": "Link",
-        "description": "Link that can be used to perform an operation related to this object (HATEOAS)"
-      },
-      "LoginDTO": {
-        "type": "object",
-        "required": [
-          "loginType"
-        ],
-        "discriminator": {
-          "propertyName": "loginType"
-        },
-        "properties": {
-          "loginType": {
-            "type": "string",
-            "enum": [
-              "FORM",
-              "URL"
-            ]
-          }
-        },
-        "title": "LoginDTO",
-        "description": "A container object with the redirect-url needed for login."
-      },
-      "LoginFormResponse": {
-        "type": "object",
-        "properties": {
-          "activityId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "If not-null, the system has started an activity with this id."
-          },
-          "step": {
-            "$ref": "#/components/schemas/Step"
-          },
-          "userSite": {
-            "$ref": "#/components/schemas/UserSite"
-          },
-          "userSiteId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "title": "LoginFormResponse",
-        "description": "Contains the id for the user-site that is being created. To know exactly the status of the Login, call the get user-site status endpoint."
-      },
-      "LoginStep": {
-        "type": "object",
-        "required": [
-          "_links"
-        ],
-        "properties": {
-          "_links": {
-            "$ref": "#/components/schemas/LoginStepLinks"
-          },
-          "form": {
-            "$ref": "#/components/schemas/FormStepObject"
-          },
-          "redirect": {
-            "$ref": "#/components/schemas/RedirectStepObject"
-          },
-          "userSiteId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "When calling the /initiate-user-site endpoint, this property refers to a user site that does not exist yet. In that case it's a reserved identifier. In case the step isn't completed this identifier will expire and will not be used anywhere."
-          }
-        },
-        "title": "LoginStep",
-        "description": "The response when initiating the process to connect a user to a site. This object contains *either* a Form Step Object, *or* a Redirect Step Object."
-      },
-      "LoginStepLinks": {
-        "type": "object",
-        "required": [
-          "postLoginStep"
-        ],
-        "properties": {
-          "postLoginStep": {
-            "$ref": "#/components/schemas/Link"
-          }
-        },
-        "title": "LoginStepLinks",
-        "description": "Links related to the LoginStep object (HATEOAS)"
-      },
-      "MULTI": {
-        "title": "MULTI",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "childComponents": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/FormComponentDTO"
-                }
-              },
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "containerType": {
-                "type": "string",
-                "enum": [
-                  "CHOICE",
-                  "MULTI",
-                  "FORM",
-                  "SECTION"
-                ]
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "id": {
-                "type": "string"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "MULTI"
-          }
-        ]
-      },
-      "NUMBER": {
-        "title": "NUMBER",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "defaultValue": {
-                "type": "number"
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "fieldType": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "PASSWORD",
-                  "SELECT",
-                  "EXPLANATION",
-                  "DATE",
-                  "NUMBER",
-                  "IBAN",
-                  "RADIO",
-                  "TEXT_AREA"
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "max": {
-                "type": "number"
-              },
-              "min": {
-                "type": "number"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "stepSize": {
-                "type": "number"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "NUMBER"
-          }
-        ]
-      },
-      "Onboarded": {
-        "type": "object",
-        "properties": {
-          "client": {
-            "type": "boolean"
-          },
-          "redirectUrlIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        },
-        "title": "Onboarded"
-      },
-      "PASSWORD": {
-        "title": "PASSWORD",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "fieldType": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "PASSWORD",
-                  "SELECT",
-                  "EXPLANATION",
-                  "DATE",
-                  "NUMBER",
-                  "IBAN",
-                  "RADIO",
-                  "TEXT_AREA"
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "length": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "maxLength": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "PASSWORD"
-          }
-        ]
-      },
-      "PIS": {
-        "type": "object",
-        "required": [
-          "hasFormSteps",
-          "hasRedirectSteps",
-          "onboarded"
-        ],
-        "properties": {
-          "hasFormSteps": {
-            "type": "boolean",
-            "description": "If the authorization process involves a form step this is true. (usually false, but true for scrapers, or more complicated banks."
-          },
-          "hasRedirectSteps": {
-            "type": "boolean",
-            "description": "If the authorization process involves a redirect this is true."
-          },
-          "onboarded": {
-            "$ref": "#/components/schemas/Onboarded"
-          },
-          "sepaSingle": {
-            "$ref": "#/components/schemas/SepaSingle"
-          }
-        },
-        "title": "PIS"
-      },
-      "RADIO": {
-        "title": "RADIO",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "defaultValue": {
-                "$ref": "#/components/schemas/SelectOptionValue"
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "fieldType": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "PASSWORD",
-                  "SELECT",
-                  "EXPLANATION",
-                  "DATE",
-                  "NUMBER",
-                  "IBAN",
-                  "RADIO",
-                  "TEXT_AREA"
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "selectOptionValues": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/SelectOptionValueDTO"
-                }
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "RADIO"
-          }
-        ]
-      },
-      "RedirectStepObject": {
-        "type": "object",
-        "required": [
-          "url"
-        ],
-        "properties": {
-          "url": {
-            "type": "string",
-            "description": "The URL the user should be redirected to."
-          }
-        },
-        "title": "RedirectStepObject",
-        "description": "The object containing a redirect URL step in the login flow."
-      },
-      "RefreshResponseDTO": {
-        "type": "object",
-        "properties": {
-          "activityId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "If non-null then a data fetch has started that involves 1 or more user sites.  If null then no data fetch could be started."
-          }
-        },
-        "title": "RefreshResponseDTO"
-      },
-      "SECTION": {
-        "title": "SECTION",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "childComponents": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/FormComponentDTO"
-                }
-              },
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "containerType": {
-                "type": "string",
-                "enum": [
-                  "CHOICE",
-                  "MULTI",
-                  "FORM",
-                  "SECTION"
-                ]
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "id": {
-                "type": "string"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "SECTION"
-          }
-        ]
-      },
-      "SELECT": {
-        "title": "SELECT",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "defaultValue": {
-                "$ref": "#/components/schemas/SelectOptionValue"
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "fieldType": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "PASSWORD",
-                  "SELECT",
-                  "EXPLANATION",
-                  "DATE",
-                  "NUMBER",
-                  "IBAN",
-                  "RADIO",
-                  "TEXT_AREA"
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "length": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "maxLength": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "selectOptionValues": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/SelectOptionValueDTO"
-                }
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "SELECT"
-          }
-        ]
-      },
-      "SelectOptionValue": {
-        "type": "object",
-        "properties": {
-          "displayName": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "title": "SelectOptionValue"
-      },
-      "SelectOptionValueDTO": {
-        "type": "object",
-        "properties": {
-          "displayName": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "title": "SelectOptionValueDTO"
-      },
-      "SepaAccountDTO": {
-        "type": "object",
-        "properties": {
-          "currency": {
-            "type": "string",
-            "enum": [
-              "AED",
-              "AFN",
-              "ALL",
-              "AMD",
-              "ANG",
-              "AOA",
-              "ARS",
-              "AUD",
-              "AWG",
-              "AZN",
-              "BAM",
-              "BBD",
-              "BDT",
-              "BGN",
-              "BHD",
-              "BIF",
-              "BMD",
-              "BND",
-              "BOB",
-              "BOV",
-              "BRL",
-              "BSD",
-              "BTN",
-              "BWP",
-              "BYN",
-              "BZD",
-              "CAD",
-              "CDF",
-              "CHE",
-              "CHF",
-              "CHW",
-              "CLF",
-              "CLP",
-              "CNY",
-              "COP",
-              "COU",
-              "CRC",
-              "CUC",
-              "CUP",
-              "CVE",
-              "CZK",
-              "DJF",
-              "DKK",
-              "DOP",
-              "DZD",
-              "EGP",
-              "ERN",
-              "ETB",
-              "EUR",
-              "FJD",
-              "FKP",
-              "GBP",
-              "GEL",
-              "GHS",
-              "GIP",
-              "GMD",
-              "GNF",
-              "GTQ",
-              "GYD",
-              "HKD",
-              "HNL",
-              "HRK",
-              "HTG",
-              "HUF",
-              "IDR",
-              "ILS",
-              "INR",
-              "IQD",
-              "IRR",
-              "ISK",
-              "JMD",
-              "JOD",
-              "JPY",
-              "KES",
-              "KGS",
-              "KHR",
-              "KMF",
-              "KPW",
-              "KRW",
-              "KWD",
-              "KYD",
-              "KZT",
-              "LAK",
-              "LBP",
-              "LKR",
-              "LRD",
-              "LSL",
-              "LYD",
-              "MAD",
-              "MDL",
-              "MGA",
-              "MKD",
-              "MMK",
-              "MNT",
-              "MOP",
-              "MRO",
-              "MUR",
-              "MVR",
-              "MWK",
-              "MXN",
-              "MXV",
-              "MYR",
-              "MZN",
-              "NAD",
-              "NGN",
-              "NIO",
-              "NOK",
-              "NPR",
-              "NZD",
-              "OMR",
-              "PAB",
-              "PEN",
-              "PGK",
-              "PHP",
-              "PKR",
-              "PLN",
-              "PYG",
-              "QAR",
-              "RON",
-              "RSD",
-              "RUB",
-              "RWF",
-              "SAR",
-              "SBD",
-              "SCR",
-              "SDG",
-              "SEK",
-              "SGD",
-              "SHP",
-              "SLL",
-              "SOS",
-              "SRD",
-              "SSP",
-              "STD",
-              "SVC",
-              "SYP",
-              "SZL",
-              "THB",
-              "TJS",
-              "TMT",
-              "TND",
-              "TOP",
-              "TRY",
-              "TTD",
-              "TWD",
-              "TZS",
-              "UAH",
-              "UGX",
-              "USD",
-              "USN",
-              "UYI",
-              "UYU",
-              "UZS",
-              "VEF",
-              "VND",
-              "VUV",
-              "WST",
-              "XAF",
-              "XCD",
-              "XDR",
-              "XOF",
-              "YER",
-              "ZAR",
-              "ZMW",
-              "ZWL",
-              "XXX"
-            ]
-          },
-          "iban": {
-            "type": "string"
-          }
-        },
-        "title": "SepaAccountDTO"
-      },
-      "SepaAmountDTO": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number"
-          }
-        },
-        "title": "SepaAmountDTO"
-      },
-      "SepaPaymentDTO": {
-        "type": "object",
-        "properties": {
-          "externalPaymentId": {
-            "type": "string",
-            "description": "Identifier of the payment at the bank.  Non-null if paymenStatus <> INITIATED."
-          },
-          "paymentId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Unique identifier of the payment."
-          },
-          "paymentStatus": {
-            "type": "string",
-            "enum": [
-              "INITIATED",
-              "ACCEPTED",
-              "REJECTED",
-              "COMPLETED"
-            ]
-          }
-        },
-        "title": "SepaPaymentDTO"
-      },
-      "SepaSingle": {
-        "type": "object",
-        "properties": {
-          "debtorAccount": {
-            "$ref": "#/components/schemas/Field"
-          },
-          "executionDate": {
-            "$ref": "#/components/schemas/Field"
-          },
-          "executionPriority": {
-            "$ref": "#/components/schemas/Field"
-          }
-        },
-        "title": "SepaSingle"
-      },
-      "Services": {
-        "type": "object",
-        "properties": {
-          "ais": {
-            "$ref": "#/components/schemas/AIS"
-          },
-          "pis": {
-            "$ref": "#/components/schemas/PIS"
-          }
-        },
-        "title": "Services"
-      },
-      "SiteConnectionHealthStatus": {
-        "type": "object",
-        "required": [
-          "healthStatus",
-          "manualMaintenanceStatus",
-          "successRatioForCreateOrUpdate",
-          "successRatioRefresh"
-        ],
-        "properties": {
-          "healthStatus": {
-            "type": "string",
-            "description": "The total calculated health of this site.",
-            "enum": [
-              "UP",
-              "DOWN"
-            ]
-          },
-          "manualMaintenanceFrom": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The start of manual maintenance for this site, in UTC."
-          },
-          "manualMaintenanceStatus": {
-            "type": "string",
-            "description": "The current manual maintenance status of the site.",
-            "enum": [
-              "NONE",
-              "SCHEDULED",
-              "MAINTENANCE"
-            ]
-          },
-          "manualMaintenanceTo": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The end of manual maintenance for this site, in UTC."
-          },
-          "successRatioForCreateOrUpdate": {
-            "type": "string",
-            "description": "The success ratio (1.00 - 0.00) of an add bank / update operation. It might also be \"not available\" due to a lack of load on this site."
-          },
-          "successRatioRefresh": {
-            "type": "string",
-            "description": "The success ratio (1.00 - 0.00) of a refresh operation. It might also be \"not available\" due to a lack of load on this site."
-          }
-        },
-        "title": "SiteConnectionHealthStatus"
-      },
-      "SiteDTO": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "supportedAccountTypes"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "example": 123
-          },
-          "name": {
-            "type": "string",
-            "example": "ING Bank"
-          },
-          "supportedAccountTypes": {
-            "type": "array",
-            "example": "CURRENT_ACCOUNT,SAVINGS_ACCOUNT,CREDIT_CARD",
-            "description": "The account types this site supports",
-            "items": {
-              "type": "string",
-              "enum": [
-                "CURRENT_ACCOUNT",
-                "CREDIT_CARD",
-                "SAVINGS_ACCOUNT",
-                "PREPAID_ACCOUNT",
-                "PENSION",
-                "INVESTMENT"
-              ]
-            }
-          }
-        },
-        "title": "SiteDTO"
-      },
-      "Step": {
-        "type": "object",
-        "properties": {
-          "form": {
-            "$ref": "#/components/schemas/FormStepObject"
-          },
-          "redirect": {
-            "$ref": "#/components/schemas/RedirectStepObject"
-          }
-        },
-        "title": "Step",
-        "description": "Contains a step that the user needs to complete in order to successfully connect a user site."
-      },
-      "SubmitSepaPaymentRequestDTO": {
-        "type": "object",
-        "properties": {
-          "redirectUrl": {
-            "type": "string"
-          }
-        },
-        "title": "SubmitSepaPaymentRequestDTO"
-      },
-      "SymmetricKeyEncryptionDetails": {
-        "type": "object",
-        "required": [
-          "cipher",
-          "publicKey"
-        ],
-        "properties": {
-          "cipher": {
-            "type": "string",
-            "description": "Algorithm/Mode/Padding to use with generated symmetric key encryption"
-          },
-          "publicKey": {
-            "type": "string",
-            "description": "Public key with which to encrypt symmetric encryption key and initialization vector"
-          }
-        },
-        "title": "SymmetricKeyEncryptionDetails",
-        "description": "Encryption details and public key"
-      },
-      "TEXT": {
-        "title": "TEXT",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "fieldType": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "PASSWORD",
-                  "SELECT",
-                  "EXPLANATION",
-                  "DATE",
-                  "NUMBER",
-                  "IBAN",
-                  "RADIO",
-                  "TEXT_AREA"
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "length": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "maxLength": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "TEXT"
-          }
-        ]
-      },
-      "TEXT_AREA": {
-        "title": "TEXT_AREA",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/FormComponentDTO"
-          },
-          {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "componentType": {
-                "type": "string",
-                "enum": [
-                  "CONTAINER",
-                  "FIELD"
-                ]
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "fieldType": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "PASSWORD",
-                  "SELECT",
-                  "EXPLANATION",
-                  "DATE",
-                  "NUMBER",
-                  "IBAN",
-                  "RADIO",
-                  "TEXT_AREA"
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "maxLength": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "optional": {
-                "type": "boolean"
-              },
-              "rows": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "title": "TEXT_AREA"
-          }
-        ]
-      },
-      "URL": {
-        "title": "URL",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/LoginDTO"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "redirectUrl": {
-                "type": "string"
-              }
-            },
-            "title": "URL",
-            "description": "A container object with the redirect-url needed for login."
-          }
-        ],
-        "description": "A container object with the redirect-url needed for login."
-      },
-      "UserSite": {
-        "type": "object",
-        "required": [
-          "connectionStatus",
-          "id",
-          "lastDataFetchTime"
-        ],
-        "properties": {
-          "connectionStatus": {
-            "type": "string",
-            "example": "CONNECTED",
-            "description": "The connection status. This indicates whether we can fetch new data for this user site.",
-            "enum": [
-              "CONNECTED",
-              "DISCONNECTED",
-              "STEP_NEEDED"
-            ]
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "lastDataFetchFailureReason": {
-            "type": "string",
-            "example": "CONSENT_EXPIRED",
-            "description": "If the last refresh fails, this property indicates why. This is only notnull in case connectedStatus==DISCONNECTED.",
-            "enum": [
-              "TECHNICAL_ERROR",
-              "ACTION_NEEDED_AT_SITE",
-              "AUTHENTICATION_FAILED",
-              "CONSENT_EXPIRED"
-            ]
-          },
-          "lastDataFetchTime": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The last time user-site was successfully refreshed"
-          },
-          "metaData": {
-            "type": "object",
-            "description": "Contains meta data of the user-site, such as for some banks the region the user selected when adding the bank",
-            "additionalProperties": {
-              "type": "string"
-            }
-          },
-          "site": {
-            "$ref": "#/components/schemas/SiteDTO"
-          }
-        },
-        "title": "UserSite",
-        "description": "The connection between the user and a site."
+        "title": "UserSiteDTO",
+        "description": "The user-site to which this account is linked."
       },
       "AddUser": {
         "type": "object",

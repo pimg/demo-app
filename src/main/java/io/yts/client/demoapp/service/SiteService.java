@@ -93,6 +93,8 @@ public class SiteService {
 				.contentType(MediaType.APPLICATION_JSON)
 				.bodyValue(requestBody).retrieve().bodyToMono(LoginFormResponse.class);
 
+//		loginFormResponse.filter(loginFormResponse1 -> loginFormResponse1.getUserSite().getConnectionStatus().getValue().equals(io.yts.client.messages.UserSite.ConnectionStatusEnum.STEP_NEEDED))
+//			.then().thenReturn(createUserSite(state, loginFormResponse.block().getStep().getRedirect().getUrl()));
 		Mono<UserSite> userSite = loginFormResponse.flatMap(loginFormResponse1 -> Mono.just(new UserSite(loginFormResponse1.getUserSiteId(), userId, siteId)));
 		return userSiteRepository.saveAll(userSite).publishNext();
 	}

@@ -39,6 +39,7 @@ public class YtsWebClient {
 	private final TokenUtil tokenUtil;
 	private static final Logger logger = LoggerFactory.getLogger(YtsWebClient.class);
 
+	private ExchangeFilterFunction setAccessToken = (clientRequest, nextFilter)  -> extractAccessToken(getAccessToken()).map(setBearerTokenInHeader(clientRequest)).flatMap(nextFilter::exchange);
 
 	@Autowired
 	public YtsWebClient(TokenUtil tokenUtil, SslContext sslContext, @Value("${client.base.url}") String baseUrl, @Value("${client.signing.keystore.password}") String keystorePassword, @Value("${client.signing.keystore.alias}") String alias) {
@@ -65,8 +66,6 @@ public class YtsWebClient {
 	public WebClient getWebClient() {
 		return webClient;
 	}
-
-	private ExchangeFilterFunction setAccessToken = (clientRequest, nextFilter)  -> extractAccessToken(getAccessToken()).map(setBearerTokenInHeader(clientRequest)).flatMap(nextFilter::exchange);
 
 	private Function<String, ClientRequest> setBearerTokenInHeader(ClientRequest request) {
 		return token -> ClientRequest.from(request).header("Authorization", "Bearer " + token).build();

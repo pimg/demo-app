@@ -7,7 +7,10 @@ import com.nimbusds.jwt.SignedJWT;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.security.*;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Date;
 import java.util.UUID;
