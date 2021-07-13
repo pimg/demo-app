@@ -28,78 +28,74 @@ import java.util.UUID;
 @Component
 public class SiteService {
 
-	private Cache<UUID, Map<String, UUID>> cache;
-	private String psuIpAddress;
+  private Cache<UUID, Map<String, UUID>> cache;
+  private String psuIpAddress;
 
-	@Autowired
-	YtsWebClient ytsWebClient;
+  @Autowired
+  YtsWebClient ytsWebClient;
 
-	@Autowired
-	UserSiteRepository userSiteRepository;
+  @Autowired
+  UserSiteRepository userSiteRepository;
 
-	@PostConstruct
-	public void initialize() {
-		this.cache = Caffeine.newBuilder().maximumSize(100)
-			.expireAfterWrite(Duration.ofSeconds(600)).build();
+  @PostConstruct
+  public void initialize() {
+    this.cache = Caffeine.newBuilder().maximumSize(100)
+      .expireAfterWrite(Duration.ofSeconds(600)).build();
 
-		Socket socket = new Socket();
-		try {
-			socket.connect(new InetSocketAddress("google.com", 80));
-		} catch (IOException e) {
-			this.psuIpAddress = "ff39:6773:c03c:48e8:5b49:492a:d198:4b05";
-		}
-		this.psuIpAddress = socket.getInetAddress().getHostAddress();
+    Socket socket = new Socket();
+    try {
+      socket.connect(new InetSocketAddress("google.com", 80));
+    } catch (IOException e) {
+      this.psuIpAddress = "ff39:6773:c03c:48e8:5b49:492a:d198:4b05";
+    }
+    this.psuIpAddress = socket.getInetAddress().getHostAddress();
 
-	}
+  }
 
-	public Mono<ClientSiteEntity[]> getSites() {
-		return ytsWebClient.getWebClient().get()
-				.uri("/site-management/v2/sites")
-				.header("Content-Type", "application/json")
-				.retrieve().bodyToMono(ClientSiteEntity[].class);
+  public Mono<ClientSiteEntity[]> getSites() {
+    return ytsWebClient.getWebClient().get()
+      .uri("/site-management/v2/sites")
+      .header("Content-Type", "application/json")
+      .retrieve().bodyToMono(ClientSiteEntity[].class);
 
-	}
+  }
 
-	public Mono<LoginStep> connect(UUID siteId, UUID userId, String redirectUrlId) {
+  public Mono<LoginStep> connect(UUID siteId, UUID userId, String redirectUrlId) {
 
-		Mono<LoginStep> loginstep = ytsWebClient.getWebClient().post()
-				.uri(uriBuilder -> uriBuilder.path("/v1/users/{userId}/connect")
-					.queryParam("site", siteId)
-					.queryParam("redirectUrlId", redirectUrlId)
-				.build(userId))
-				.header("PSU-IP-Address", psuIpAddress)
-				.contentType(MediaType.APPLICATION_JSON)
-				.retrieve().bodyToMono(LoginStep.class);
+    return ytsWebClient.getWebClient().post()
+      .uri(uriBuilder -> uriBuilder.path("/v1/users/{userId}/connect")
+        .queryParam("site", siteId)
+        .queryParam("redirectUrlId", redirectUrlId)
+        .build(userId))
+      .header("PSU-IP-Address", psuIpAddress)
+      .contentType(MediaType.APPLICATION_JSON)
+      .retrieve().bodyToMono(LoginStep.class).map(loginStep -> {
+        MultiValueMap<String, String> parameters = UriComponentsBuilder.fromUriString(loginStep.getRedirect().getUrl()).build().getQueryParams();
+        UUID state = UUID.fromString(Objects.requireNonNull(parameters.getFirst("state")));
+        cache.put(state, Map.of("siteId", siteId, "userId", userId));
+        return loginStep;
+      });
+  }
 
-		return loginstep.map(loginStep -> {
-			MultiValueMap<String, String> parameters = UriComponentsBuilder.fromUriString(loginStep.getRedirect().getUrl()).build().getQueryParams();
-			UUID state = UUID.fromString(Objects.requireNonNull(parameters.getFirst("state")));
-			cache.put(state, Map.of("siteId", siteId, "userId", userId));
-			return loginStep;
-		});
-	}
+  public Mono<UserSite> createUserSite(UUID state, String redirectUrl) {
 
-	public Mono<UserSite> createUserSite(UUID state, String redirectUrl) {
+    Map<String, UUID> usersiteInfo = cache.getIfPresent(state);
+    UUID siteId = usersiteInfo.get("siteId");
+    UUID userId = usersiteInfo.get("userId");
 
-		Map<String, UUID> usersiteInfo = cache.getIfPresent(state);
-		UUID siteId = usersiteInfo.get("siteId");
-		UUID userId = usersiteInfo.get("userId");
+    String requestBody = "{\"redirectUrl\": \"" + redirectUrl + "\", \"loginType\": \"URL\"}";
 
-		String requestBody = "{\"redirectUrl\": \""+ redirectUrl + "\", \"loginType\": \"URL\"}";;
+    Mono<LoginFormResponse> loginFormResponse = ytsWebClient.getWebClient().post()
+      .uri(uriBuilder -> uriBuilder.path("/v1/users/{userId}/user-sites").build(userId))
+      .header("PSU-IP-Address", psuIpAddress)
+      .contentType(MediaType.APPLICATION_JSON)
+      .bodyValue(requestBody).retrieve().bodyToMono(LoginFormResponse.class);
 
-		Mono<LoginFormResponse> loginFormResponse = ytsWebClient.getWebClient().post()
-				.uri(uriBuilder -> uriBuilder.path("/v1/users/{userId}/user-sites").build(userId))
-				.header("PSU-IP-Address", psuIpAddress)
-				.contentType(MediaType.APPLICATION_JSON)
-				.bodyValue(requestBody).retrieve().bodyToMono(LoginFormResponse.class);
+    Mono<UserSite> userSite = loginFormResponse.flatMap(loginFormResponse1 -> Mono.just(new UserSite(loginFormResponse1.getUserSiteId(), userId, siteId)));
+    return userSiteRepository.saveAll(userSite).publishNext();
+  }
 
-//		loginFormResponse.filter(loginFormResponse1 -> loginFormResponse1.getUserSite().getConnectionStatus().getValue().equals(io.yts.client.messages.UserSite.ConnectionStatusEnum.STEP_NEEDED))
-//			.then().thenReturn(createUserSite(state, loginFormResponse.block().getStep().getRedirect().getUrl()));
-		Mono<UserSite> userSite = loginFormResponse.flatMap(loginFormResponse1 -> Mono.just(new UserSite(loginFormResponse1.getUserSiteId(), userId, siteId)));
-		return userSiteRepository.saveAll(userSite).publishNext();
-	}
-
-	public Flux<UserSite> getConnections() {
-		return userSiteRepository.findAll();
-	}
+  public Flux<UserSite> getConnections() {
+    return userSiteRepository.findAll();
+  }
 }

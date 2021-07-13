@@ -4,6 +4,7 @@ import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -18,18 +19,24 @@ import java.util.UUID;
 @Component
 public class TokenUtil {
 
+	@Value("${client.id}")
+	private String clientId;
+
+	@Value("${client.signing.request.token.id}")
+	private String requestTokenPublicKeyId;
+
 	public String createToken(String keystorePassword, String alias) throws NoSuchAlgorithmException, IOException, JOSEException, KeyStoreException, CertificateException, UnrecoverableKeyException {
 
 		PrivateKey key = CertificateManager.getPrivateKey("tls/signing-keystore.p12", keystorePassword, alias);
 
 		JWSSigner signer = new RSASSASigner(key);
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-				.issuer("30f57515-1045-45a8-8efd-54f32a46153a")
+				.issuer(clientId)
 				.jwtID(UUID.randomUUID().toString())
 				.issueTime(new Date())
 				.notBeforeTime(new Date())
 				.build();
-		SignedJWT signedJWT = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS512).keyID("affbe29f-f195-4f45-8515-52454ee6b4a0").type(JOSEObjectType.JWT).build(), claimsSet);
+		SignedJWT signedJWT = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS512).keyID(requestTokenPublicKeyId).type(JOSEObjectType.JWT).build(), claimsSet);
 		signedJWT.sign(signer);
 		return signedJWT.serialize();
 	}
