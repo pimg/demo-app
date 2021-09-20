@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.3.2.RELEASE</version>
+		<version>2.5.4</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>io.yts.client</groupId>
@@ -15,7 +15,7 @@
 	<description>Demo app for the YTS API's</description>
 
 	<properties>
-		<java.version>14</java.version>
+		<java.version>16</java.version>
 		<swagger.parser.version>2.0.21</swagger.parser.version>
 		<jackson.databind.version>0.2.1</jackson.databind.version>
 		<jsr305.version>3.0.2</jsr305.version>
@@ -46,7 +46,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.16</version>
+			<version>1.18.20</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
