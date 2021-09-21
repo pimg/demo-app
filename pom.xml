@@ -15,7 +15,7 @@
 	<description>Demo app for the YTS API's</description>
 
 	<properties>
-		<java.version>16</java.version>
+		<java.version>17</java.version>
 		<swagger.parser.version>2.0.21</swagger.parser.version>
 		<jackson.databind.version>0.2.1</jackson.databind.version>
 		<jsr305.version>3.0.2</jsr305.version>
@@ -124,6 +124,8 @@
 								<sourceFolder>src/gen/java/main</sourceFolder>
 							</configOptions>
 							<generateApis>false</generateApis>
+							<generateApiTests>false</generateApiTests>
+							<generateModelTests>false</generateModelTests>
 						</configuration>
 					</execution>
 				</executions>
