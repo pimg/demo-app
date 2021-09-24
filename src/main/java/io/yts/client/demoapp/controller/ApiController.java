@@ -1,8 +1,8 @@
 package io.yts.client.demoapp.controller;
 
-import io.yts.client.demoapp.model.creditreport.CreditReport;
 import io.yts.client.demoapp.model.User;
 import io.yts.client.demoapp.model.UserSite;
+import io.yts.client.demoapp.model.creditreport.CreditReport;
 import io.yts.client.demoapp.service.AccountService;
 import io.yts.client.demoapp.service.SiteService;
 import io.yts.client.demoapp.service.UserService;

@@ -18,9 +18,9 @@
 		<java.version>17</java.version>
 		<jackson.databind.version>0.2.1</jackson.databind.version>
 		<jsr305.version>3.0.2</jsr305.version>
-		<swagger.annotations.version>1.6.0</swagger.annotations.version>
-		<caffeine.version>2.8.1</caffeine.version>
-		<nimbus.jose.jwt.version>8.10</nimbus.jose.jwt.version>
+		<swagger.annotations.version>1.6.2</swagger.annotations.version>
+		<caffeine.version>3.0.4</caffeine.version>
+		<nimbus.jose.jwt.version>9.14</nimbus.jose.jwt.version>
 		<openapi.generator.maven.version>4.3.1</openapi.generator.maven.version>
 		<lobmok.version>1.18.20</lobmok.version>
 	</properties>
@@ -116,7 +116,7 @@
 							<apiPackage>${project.groupId}</apiPackage>
 							<modelPackage>${project.groupId}.messages</modelPackage>
 							<configOptions>
-								<sourceFolder>src/gen/java/main</sourceFolder>
+								<sourceFolder>src/gen/java</sourceFolder>
 							</configOptions>
 							<generateApis>false</generateApis>
 							<generateApiTests>false</generateApiTests>
