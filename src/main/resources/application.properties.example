@@ -6,3 +6,7 @@ client.signing.keystore.password=[YOUR_SIGNING_KEY_KEYSTORE_PASSWORD]
 client.signing.keystore.alias=[YOUR_SIGNING_KEYSTORE_KEY_ALIAS]
 
 server.port=8080
+
+spring.r2dbc.url=r2dbc:h2:file://././data/demo?options=DB_CLOSE_DELAY=-1;TRACE_LEVEL_FILE=4
+spring.r2dbc.username=sa
+spring.r2dbc.initialization-mode=always
